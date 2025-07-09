@@ -1,5 +1,5 @@
 exports.handler = async (event, context) => {
-  // Handle CORS for demo
+  // Handle CORS for demo 
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
