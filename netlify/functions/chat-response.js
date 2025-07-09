@@ -40,10 +40,7 @@ export const handler = async (event, context) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ 
-        message: 'AI response received',
-        messageId: newMessage.id 
-      })
+      body: '' // Empty response
     };
   } catch (error) {
     console.error('Error:', error);
