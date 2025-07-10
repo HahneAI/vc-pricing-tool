@@ -15,7 +15,11 @@ export const handler = async (event, context) => {
     // Extract session ID from path
     const pathSegments = event.path.split('/');
     const sessionId = pathSegments[pathSegments.length - 1];
-    
+  
+    // Extract since parameter from query string
+    const url = new URL(event.rawUrl || `https://example.com${event.path}?${event.rawQuery || ''}`);
+    const since = url.searchParams.get('since') || '1970-01-01T00:00:00.000Z';
+  
     console.log('📥 Getting messages for session:', sessionId);
     
     // Fetch messages from Supabase using REST API
