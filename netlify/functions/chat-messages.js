@@ -20,7 +20,7 @@ export const handler = async (event, context) => {
     
     // Fetch messages from Supabase using REST API
     const supabaseResponse = await fetch(
-      `https://acdudelebwrzewxqmwnc.supabase.co/rest/v1/demo_messages?session_id=eq.${sessionId}&sender=eq.ai&order=created_at.asc`,
+      `https://acdudelebwrzewxqmwnc.supabase.co/rest/v1/demo_messages?session_id=eq.${sessionId}&sender=eq.ai&created_at=gte.${since}&order=created_at.asc`,
       {
         headers: {
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
