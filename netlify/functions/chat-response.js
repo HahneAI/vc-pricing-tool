@@ -19,27 +19,46 @@ export const handler = async (event, context) => {
     const { response, sessionId, timestamp, techId } = JSON.parse(event.body);
     
     // Decode the URL-encoded response
-    const decodedResponse = decodeURIComponent(response);
+    const decodedResponse = response ? decodeURIComponent(response) : response;
     
-    console.log('📨 Received from Make.com:', { 
-      responseLength: decodedResponse.length, 
-      sessionId, 
-      techId 
-    });
+    console.log('📨 Received from Make.com:', { response: decodedResponse, sessionId, techId });
     
-    // Simple in-memory storage for demo
-    global.demoMessages = global.demoMessages || [];
-    
-    const newMessage = {
-      id: Date.now().toString(),
-      text: decodedResponse,
-      sender: 'ai',
-      timestamp: timestamp || new Date().toISOString(),
-      sessionId: sessionId
-    };
+    // Store message in Supabase demo_messages table
+    const supabaseResponse = await fetch(
+      'https://acdudelebwrzewxqmwnc.supabase.co/rest/v1/demo_messages',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          message_text: decodedResponse,
+          sender: 'ai',
+          tech_id: techId,
+          created_at: timestamp || new Date().toISOString()
+        })
+      }
+    );
 
-    global.demoMessages.push(newMessage);
-    console.log('✅ Stored demo message:', newMessage.id);
+    if (!supabaseResponse.ok) {
+      console.error('Supabase error:', await supabaseResponse.text());
+      // Fallback to in-memory storage if Supabase fails
+      global.demoMessages = global.demoMessages || [];
+      global.demoMessages.push({
+        id: Date.now().toString(),
+        text: decodedResponse,
+        sender: 'ai',
+        timestamp: timestamp || new Date().toISOString(),
+        sessionId: sessionId
+      });
+      console.log('✅ Stored demo message in memory (fallback)');
+    } else {
+      const savedMessage = await supabaseResponse.json();
+      console.log('✅ Stored message in Supabase:', savedMessage[0]?.id);
+    }
     
     return {
       statusCode: 200,
@@ -49,7 +68,7 @@ export const handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         message: 'AI response received',
-        messageId: newMessage.id 
+        messageId: Date.now().toString()
       })
     };
   } catch (error) {
