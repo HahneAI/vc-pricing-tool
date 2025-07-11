@@ -60,7 +60,8 @@ export const handler = async (event, context) => {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
             'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
           },
           body: JSON.stringify({
             session_id: sessionId,
@@ -74,15 +75,25 @@ export const handler = async (event, context) => {
 
       if (!supabaseResponse.ok) {
         const errorText = await supabaseResponse.text();
-        console.error('Supabase error:', errorText);
+        console.error('Supabase error:', supabaseResponse.status, errorText);
         throw new Error(`Supabase error: ${supabaseResponse.status}`);
       }
 
-      const savedMessage = await supabaseResponse.json();
-      console.log('✅ Stored message in Supabase:', savedMessage[0]?.id);
+      // Handle Supabase response properly to avoid JSON parsing errors
+      const responseText = await supabaseResponse.text();
+      if (responseText && responseText.trim()) {
+        try {
+          const savedMessage = JSON.parse(responseText);
+          console.log('✅ Stored message in Supabase:', savedMessage[0]?.id || 'success');
+        } catch (jsonError) {
+          console.log('✅ Stored message in Supabase (non-JSON response)');
+        }
+      } else {
+        console.log('✅ Stored message in Supabase (empty response - prefer=minimal)');
+      }
       
     } catch (supabaseError) {
-      console.error('Supabase storage failed:', supabaseError);
+      console.error('Supabase storage failed:', supabaseError.message);
       
       // Fallback to in-memory storage if Supabase fails
       global.demoMessages = global.demoMessages || [];
