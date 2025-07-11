@@ -158,17 +158,21 @@ const Quotes = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
+    <DashboardLayout title="AI Quote Engine">
+      {/* Container that prevents page scrolling and keeps chat in viewport */}
+      <div className="h-[calc(100vh-12rem)] flex flex-col">
+        {/* Header section - fixed height */}
+        <div className="flex items-center gap-3 mb-4 flex-shrink-0">
           <MessageCircle className="h-8 w-8 text-primary-600" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             AI Quote Engine
-          </h1>
+          </h2>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow h-[600px] flex flex-col">
-          {/* Chat Messages Area */}
+        {/* Chat container - takes remaining space */}
+        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col min-h-0">
+          
+          {/* Chat Messages Area - scrollable within container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <div
@@ -216,8 +220,8 @@ const Quotes = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input Area */}
-          <div className="border-t dark:border-gray-700 p-4">
+          {/* Chat Input Area - fixed at bottom of chat container */}
+          <div className="border-t dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded-b-lg flex-shrink-0">
             <div className="flex space-x-2">
               <input
                 type="text"
