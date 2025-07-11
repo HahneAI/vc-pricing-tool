@@ -18,32 +18,28 @@ export const handler = async (event, context) => {
   try {
     const { response, sessionId, timestamp, techId } = JSON.parse(event.body);
     
-    console.log('📨 Received from Make.com:', { response, sessionId, techId });
+    // Decode the URL-encoded response
+    const decodedResponse = decodeURIComponent(response);
     
-    // Store message in Supabase using REST API
-    const supabaseResponse = await fetch(
-      'https://acdudelebwrzewxqmwnc.supabase.co/rest/v1/demo_messages',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c'
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message_text: response,
-          sender: 'ai',
-          tech_id: techId
-        })
-      }
-    );
+    console.log('📨 Received from Make.com:', { 
+      responseLength: decodedResponse.length, 
+      sessionId, 
+      techId 
+    });
+    
+    // Simple in-memory storage for demo
+    global.demoMessages = global.demoMessages || [];
+    
+    const newMessage = {
+      id: Date.now().toString(),
+      text: decodedResponse,
+      sender: 'ai',
+      timestamp: timestamp || new Date().toISOString(),
+      sessionId: sessionId
+    };
 
-    if (!supabaseResponse.ok) {
-      console.error('Supabase error:', await supabaseResponse.text());
-    } else {
-      console.log('✅ Stored message in Supabase');
-    }
+    global.demoMessages.push(newMessage);
+    console.log('✅ Stored demo message:', newMessage.id);
     
     return {
       statusCode: 200,
@@ -53,7 +49,7 @@ export const handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         message: 'AI response received',
-        messageId: Date.now().toString()
+        messageId: newMessage.id 
       })
     };
   } catch (error) {
