@@ -16,35 +16,74 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { response, sessionId, timestamp, techId } = JSON.parse(event.body);
+    let requestBody;
+    try {
+      requestBody = JSON.parse(event.body);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.log('Raw body:', event.body);
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid JSON in request' })
+      };
+    }
+
+    const { response, sessionId, timestamp, techId } = requestBody;
     
-    // Decode the URL-encoded response
-    const decodedResponse = response ? decodeURIComponent(response) : response;
+    // Decode and clean the response
+    let decodedResponse = response ? decodeURIComponent(response) : response;
     
-    console.log('📨 Received from Make.com:', { response: decodedResponse, sessionId, techId });
+    // Limit response size to prevent errors
+    if (decodedResponse && decodedResponse.length > 2000) {
+      decodedResponse = decodedResponse.substring(0, 1997) + '...';
+      console.log('⚠️ Response truncated due to length:', decodedResponse.length);
+    }
+    
+    // Clean any problematic characters
+    if (decodedResponse) {
+      decodedResponse = decodedResponse.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    }
+    
+    console.log('📨 Received from Make.com:', { 
+      responsePreview: decodedResponse ? decodedResponse.substring(0, 200) + '...' : 'No response',
+      sessionId, 
+      techId 
+    });
     
     // Store message in Supabase demo_messages table
-    const supabaseResponse = await fetch(
-      'https://acdudelebwrzewxqmwnc.supabase.co/rest/v1/demo_messages',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message_text: decodedResponse,
-          sender: 'ai',
-          tech_id: techId,
-          created_at: timestamp || new Date().toISOString()
-        })
-      }
-    );
+    try {
+      const supabaseResponse = await fetch(
+        'https://acdudelebwrzewxqmwnc.supabase.co/rest/v1/demo_messages',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZHVkZWxlYndyemV3eHFtd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NzUxNTcsImV4cCI6MjA2NTQ1MTE1N30.HnxT5Z9EcIi4otNryHobsQCN6x5M43T0hvKMF6Pxx_c',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            message_text: decodedResponse,
+            sender: 'ai',
+            tech_id: techId,
+            created_at: timestamp || new Date().toISOString()
+          })
+        }
+      );
 
-    if (!supabaseResponse.ok) {
-      console.error('Supabase error:', await supabaseResponse.text());
+      if (!supabaseResponse.ok) {
+        const errorText = await supabaseResponse.text();
+        console.error('Supabase error:', errorText);
+        throw new Error(`Supabase error: ${supabaseResponse.status}`);
+      }
+
+      const savedMessage = await supabaseResponse.json();
+      console.log('✅ Stored message in Supabase:', savedMessage[0]?.id);
+      
+    } catch (supabaseError) {
+      console.error('Supabase storage failed:', supabaseError);
+      
       // Fallback to in-memory storage if Supabase fails
       global.demoMessages = global.demoMessages || [];
       global.demoMessages.push({
@@ -55,9 +94,6 @@ export const handler = async (event, context) => {
         sessionId: sessionId
       });
       console.log('✅ Stored demo message in memory (fallback)');
-    } else {
-      const savedMessage = await supabaseResponse.json();
-      console.log('✅ Stored message in Supabase:', savedMessage[0]?.id);
     }
     
     return {
@@ -71,12 +107,16 @@ export const handler = async (event, context) => {
         messageId: Date.now().toString()
       })
     };
+    
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Handler Error:', error);
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Internal server error' })
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message 
+      })
     };
   }
 };
