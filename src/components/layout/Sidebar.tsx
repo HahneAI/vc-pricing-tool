@@ -81,7 +81,7 @@ const menuItems = [
               <AlertCircle size={24} />
             </div>
             <div>
-              <h1 className="font-bold text-xl">FieldSync</h1>
+              <h1 className="font-bold text-xl">TradeSphere</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">Field Service Management</p>
             </div>
           </div>

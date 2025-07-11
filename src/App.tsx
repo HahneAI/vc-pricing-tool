@@ -23,7 +23,7 @@ function App() {
   
   useEffect(() => {
     // Set app title
-    document.title = 'FieldSync - Field Service Management';
+    document.title = 'TradeSphere - Field Service Management';
   }, []);
   
   if (loading) {

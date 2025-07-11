@@ -78,7 +78,7 @@ const Register = () => {
             <AlertCircle size={28} />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Create an account</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Join FieldSync to manage your field service operations</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Join TradeSphere to manage your field service operations</p>
         </div>
         
         {formError && (

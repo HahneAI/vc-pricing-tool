@@ -12,6 +12,7 @@ const LoadingScreen = () => {
         </div>
         
         <h1 className="text-2xl font-bold mt-4">Loading FieldSync</h1>
+        <h1 className="text-2xl font-bold mt-4">Loading TradeSphere</h1>
         <p className="text-gray-500 dark:text-gray-400">Please wait while we set things up...</p>
       </div>
     </div>
