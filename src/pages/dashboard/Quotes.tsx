@@ -159,36 +159,39 @@ const Quotes = () => {
 
   return (
     <DashboardLayout title="AI Quote Engine">
-      {/* Container that prevents page scrolling and keeps chat in viewport */}
-      <div className="h-[calc(100vh-12rem)] flex flex-col">
-        {/* Header section - fixed height */}
-        <div className="flex items-center gap-3 mb-4 flex-shrink-0">
-          <MessageCircle className="h-8 w-8 text-primary-600" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+      {/* Mobile-first responsive container */}
+      <div className="h-full flex flex-col">
+        
+        {/* Header - compact on mobile */}
+        <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4 flex-shrink-0 px-2 md:px-0">
+          <MessageCircle className="h-6 w-6 md:h-8 md:w-8 text-primary-600 flex-shrink-0" />
+          <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">
             AI Quote Engine
           </h2>
         </div>
 
-        {/* Chat container - takes remaining space */}
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col min-h-0">
+        {/* Chat container - mobile optimized */}
+        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col min-h-0 overflow-hidden">
           
-          {/* Chat Messages Area - scrollable within container */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Chat Messages Area - optimized scroll */}
+          <div className="flex-1 overflow-y-auto px-3 md:px-4 py-3 md:py-4 space-y-3 md:space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.sender === 'user'
+                  className={`
+                    max-w-[85%] md:max-w-xs lg:max-w-md px-3 md:px-4 py-2 md:py-3 rounded-lg
+                    ${message.sender === 'user'
                       ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}
+                    }
+                  `}
                 >
-                  {/* Enhanced message rendering with formatting support */}
+                  {/* Enhanced message rendering with mobile-optimized typography */}
                   <div 
-                    className="text-sm whitespace-pre-wrap"
+                    className="text-sm md:text-base whitespace-pre-wrap leading-relaxed"
                     dangerouslySetInnerHTML={{
                       __html: message.text
                         .replace(/\n/g, '<br />')
@@ -203,15 +206,15 @@ const Quotes = () => {
               </div>
             ))}
             
-            {/* Enhanced AI Thinking State */}
+            {/* Enhanced AI Thinking State - mobile optimized */}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg flex items-center gap-3">
-                  <Bot className="h-5 w-5 text-primary-600" />
+                <div className="bg-gray-100 dark:bg-gray-700 px-3 md:px-4 py-3 rounded-lg flex items-center gap-2 md:gap-3 max-w-[85%]">
+                  <Bot className="h-4 w-4 md:h-5 md:w-5 text-primary-600 flex-shrink-0" />
                   <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      AI is analyzing your request...
+                    <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin text-primary-600" />
+                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
+                      AI is analyzing...
                     </span>
                   </div>
                 </div>
@@ -220,29 +223,44 @@ const Quotes = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input Area - fixed at bottom of chat container */}
-          <div className="border-t dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded-b-lg flex-shrink-0">
-            <div className="flex space-x-2">
+          {/* Chat Input Area - mobile-first with touch optimization */}
+          <div className="border-t dark:border-gray-700 p-3 md:p-4 bg-white dark:bg-gray-800 rounded-b-lg flex-shrink-0">
+            <div className="flex gap-2 md:gap-3">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask me about pricing, quote a job, or chat about business..."
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                placeholder="Ask about pricing, quotes, or business..."
+                className="
+                  flex-1 px-3 md:px-4 py-3 md:py-2 text-sm md:text-base
+                  border border-gray-300 dark:border-gray-600 rounded-lg
+                  focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                  dark:bg-gray-700 dark:text-white
+                  touch-manipulation
+                "
                 disabled={isLoading}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputText.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="
+                  px-4 md:px-6 py-3 md:py-2 bg-primary-600 text-white rounded-lg 
+                  hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed 
+                  flex items-center gap-2 font-medium text-sm md:text-base
+                  min-w-[48px] min-h-[48px] md:min-h-[40px]
+                  touch-manipulation transition-colors
+                "
               >
-                <Send className="h-4 w-4" />
-                Send
+                <Send className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                <span className="hidden md:inline">Send</span>
               </button>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Session ID: {sessionIdRef.current}
+            
+            {/* Session info - more compact on mobile */}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 truncate">
+              <span className="md:hidden">Session: {sessionIdRef.current.slice(-8)}</span>
+              <span className="hidden md:inline">Session ID: {sessionIdRef.current}</span>
             </p>
           </div>
         </div>
