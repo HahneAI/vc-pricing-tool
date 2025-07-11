@@ -1,132 +1,152 @@
 import { useState } from 'react';
+import { Calculator } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Briefcase, 
-  MessageCircle, 
   Clock, 
   Package, 
   Users, 
-  Building, 
-  LogOut,
-  Menu,
-  X
+  Building2, 
+  Settings, 
+  LogOut, 
+  Menu, 
+  X,
+  AlertCircle
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const Sidebar = () => {
+  const { isAdmin, signOut, userProfile } = useAuth();
+  const { theme } = useTheme();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Briefcase, label: 'Jobs', path: '/jobs' },
-    { icon: MessageCircle, label: 'Quote Engine', path: '/quotes' },
-    { icon: Clock, label: 'Labor Hours', path: '/labor' },
-    { icon: Package, label: 'Materials', path: '/materials' },
-    { icon: Users, label: 'Employees', path: '/employees' },
-    { icon: Building, label: 'Companies', path: '/companies' }
-  ];
-
+  const [mobileOpen, setMobileOpen] = useState(false);
+  
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setMobileOpen(!mobileOpen);
   };
-
+  
   const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
+    setMobileOpen(false);
   };
+  
+  const handleSignOut = async () => {
+    await signOut();
+  };
+  
+  const navLinkClass = ({ isActive }: { isActive: boolean }) => 
+    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+      isActive 
+        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-medium' 
+        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+    }`;
+  
+const menuItems = [
+  { path: '/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+  { path: '/jobs', name: 'Jobs', icon: <Briefcase size={20} /> },
+  { path: '/quotes', name: 'Quote Engine', icon: <Calculator size={20} /> }, // NEW
+  { path: '/labor', name: 'Labor Hours', icon: <Clock size={20} /> },
+  { path: '/materials', name: 'Materials', icon: <Package size={20} /> },
+  { path: '/employees', name: 'Employees', icon: <Users size={20} />, adminOnly: true },
+  { path: '/companies', name: 'Companies', icon: <Building2 size={20} />, adminOnly: true },
+  { path: '/settings', name: 'Settings', icon: <Settings size={20} /> },
+];
 
+  
+  const filteredMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
+  
   return (
     <>
-      {/* Mobile Menu Button - Fixed in top left */}
+      {/* Mobile Menu Toggle */}
       <button
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white dark:bg-gray-800 shadow-md"
         onClick={toggleMobileMenu}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors"
-        aria-label="Toggle menu"
+        aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
       >
-        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        {mobileOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
-
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={closeMobileMenu}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={`
-        fixed top-0 left-0 h-full bg-gray-800 text-white transition-transform duration-300 ease-in-out z-40
-        w-80 md:w-64 md:relative md:translate-x-0
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        {/* Header */}
-        <div className="p-4 border-b border-gray-700">
+      
+      {/* Sidebar - Desktop & Mobile */}
+      <aside 
+        className={`bg-white dark:bg-gray-800 shadow-lg flex flex-col transition-all duration-300 ease-in-out
+          ${mobileOpen 
+            ? 'fixed inset-0 z-40' 
+            : 'fixed -left-full md:left-0 md:sticky top-0 w-64 md:h-screen z-30'}`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
+            <div className="bg-primary-600 text-white p-2 rounded-md">
+              <AlertCircle size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-bold">TradeSphere</h2>
-              <p className="text-xs text-gray-400">Field Service Management</p>
+              <h1 className="font-bold text-xl">FieldSync</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Field Service Management</p>
             </div>
           </div>
+          
+          {/* Mobile Close Button */}
+          <button 
+            className="md:hidden" 
+            onClick={closeMobileMenu}
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
-
-        {/* User Profile - Mobile optimized */}
-        <div className="p-4 border-b border-gray-700">
+        
+        {/* User Info */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">A</span>
+            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold">
+              {userProfile?.full_name?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">Admin User</p>
-              <p className="text-xs text-gray-400">Admin</p>
+            <div>
+              <p className="font-medium truncate">{userProfile?.full_name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{userProfile?.role || 'User'}</p>
             </div>
           </div>
         </div>
-
-        {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1 px-3">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    onClick={closeMobileMenu}
-                    className={`
-                      flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-sm font-medium
-                      min-h-[48px] touch-manipulation
-                      ${isActive 
-                        ? 'bg-primary-600 text-white' 
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                      }
-                    `}
-                  >
-                    <Icon size={20} className="flex-shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
+        
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto p-4">
+          <ul className="space-y-1">
+            {filteredMenuItems.map((item) => (
+              <li key={item.path}>
+                <NavLink 
+                  to={item.path} 
+                  className={navLinkClass}
+                  onClick={closeMobileMenu}
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </NavLink>
+              </li>
+            ))}
           </ul>
         </nav>
-
-        {/* Sign Out - Mobile optimized */}
-        <div className="p-3 border-t border-gray-700">
+        
+        {/* Logout */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <button 
-            className="flex items-center gap-3 w-full px-3 py-3 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors min-h-[48px] touch-manipulation"
-            onClick={closeMobileMenu}
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
           >
             <LogOut size={20} />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
+      
+      {/* Backdrop for mobile */}
+      {mobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
+      )}
     </>
   );
 };
