@@ -182,12 +182,14 @@ const Quotes = () => {
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                   }`}
                 >
-                  <p 
+                  {/* Enhanced message rendering with formatting support */}
+                  <div 
                     className="text-sm whitespace-pre-wrap"
                     dangerouslySetInnerHTML={{
                       __html: message.text
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                         .replace(/\n/g, '<br />')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
                     }}
                   />
                   <p className="text-xs mt-1 opacity-70">
