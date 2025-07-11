@@ -61,37 +61,49 @@ const Quotes = () => {
     }
   };
 
-  // Poll for new AI messages
-const pollForAiMessages = async () => {
-  console.log('🔍 POLLING - Session:', sessionIdRef.current);
-  console.log('🔍 POLLING - URL:', NETLIFY_API_URL);
-  
-  try {
-    const response = await fetch(`${NETLIFY_API_URL}?since=${lastPollTimeRef.current.toISOString()}`);
+  // Poll for new AI messages with duplicate prevention
+  const pollForAiMessages = async () => {
+    console.log('🔍 POLLING - Session:', sessionIdRef.current);
+    console.log('🔍 POLLING - URL:', NETLIFY_API_URL);
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch AI messages');
-    }
-
-    const newAiMessages = await response.json();
-    console.log('🔍 RECEIVED DATA:', newAiMessages);
-    
-    if (newAiMessages.length > 0) {
-      console.log('✅ ADDING MESSAGES TO CHAT:', newAiMessages.length);
+    try {
+      const response = await fetch(`${NETLIFY_API_URL}?since=${lastPollTimeRef.current.toISOString()}`);
       
-      const processedMessages = newAiMessages.map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp)
-      }));
+      if (!response.ok) {
+        throw new Error('Failed to fetch AI messages');
+      }
 
-      setMessages(prev => [...prev, ...processedMessages]);
-      setIsLoading(false);
-      lastPollTimeRef.current = new Date();
+      const newAiMessages = await response.json();
+      console.log('🔍 RECEIVED DATA:', newAiMessages);
+      
+      if (newAiMessages.length > 0) {
+        console.log('✅ PROCESSING MESSAGES:', newAiMessages.length);
+        
+        const processedMessages = newAiMessages.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+
+        // Add duplicate prevention logic
+        setMessages(currentMessages => {
+          const existingIds = new Set(currentMessages.map(msg => msg.id));
+          const uniqueNewMessages = processedMessages.filter(msg => !existingIds.has(msg.id));
+          
+          if (uniqueNewMessages.length > 0) {
+            console.log(`✅ ADDING ${uniqueNewMessages.length} NEW UNIQUE MESSAGES TO CHAT`);
+            setIsLoading(false);
+            lastPollTimeRef.current = new Date();
+            return [...currentMessages, ...uniqueNewMessages];
+          } else {
+            console.log('ℹ️ No new unique messages to add');
+            return currentMessages;
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error polling for AI messages:', error);
     }
-  } catch (error) {
-    console.error('Error polling for AI messages:', error);
-  }
-};
+  };
 
   // Set up polling interval
   useEffect(() => {
@@ -170,7 +182,7 @@ const pollForAiMessages = async () => {
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                   }`}
                 >
-                  <p className="text-sm">{message.text}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   <p className="text-xs mt-1 opacity-70">
                     {message.timestamp.toLocaleTimeString()}
                   </p>
@@ -189,42 +201,35 @@ const pollForAiMessages = async () => {
                       AI is analyzing your request...
                     </span>
                   </div>
-                  {/* Animated dots */}
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  </div>
                 </div>
               </div>
             )}
-            
-            {/* Auto-scroll anchor */}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-2">
+          {/* Chat Input Area */}
+          <div className="border-t dark:border-gray-700 p-4">
+            <div className="flex space-x-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask about a landscaping quote..."
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Ask me about pricing, quote a job, or chat about business..."
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 disabled={isLoading}
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputText.trim() || isLoading}
+                disabled={isLoading || !inputText.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                <Send size={16} />
+                <Send className="h-4 w-4" />
+                Send
               </button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Connected to AI Quote Engine | Session: {sessionIdRef.current.slice(-8)} | Tech ID: 22222222-2222-2222-2222-222222222222
+              Session ID: {sessionIdRef.current}
             </p>
           </div>
         </div>
