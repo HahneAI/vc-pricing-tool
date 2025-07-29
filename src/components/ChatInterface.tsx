@@ -160,9 +160,9 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="h-screen flex flex-col p-4">
       {/* Header */}
-      <div className="w-full max-w-4xl mb-6">
+      <div className="w-full mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-primary-600 text-white p-3 rounded-lg">
@@ -191,10 +191,10 @@ const ChatInterface = () => {
       </div>
 
       {/* Chat Container */}
-      <div className="w-full max-w-4xl h-[600px] bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col overflow-hidden">
+      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col overflow-hidden min-h-0">
         
         {/* Chat Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 min-h-0">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -242,24 +242,24 @@ const ChatInterface = () => {
         </div>
 
         {/* Chat Input Area */}
-        <div className="border-t dark:border-gray-700 p-6 bg-white dark:bg-gray-800">
-          <div className="flex space-x-3">
+        <div className="border-t dark:border-gray-700 p-4 md:p-6 bg-white dark:bg-gray-800 flex-shrink-0">
+          <div className="flex space-x-2 md:space-x-3">
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask me about pricing, quote a job, or chat about business..."
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-lg"
+              className="flex-1 px-3 md:px-4 py-2 md:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-lg"
               disabled={isLoading}
             />
             <button
               onClick={handleSendMessage}
               disabled={isLoading || !inputText.trim()}
-              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+              className="px-4 md:px-6 py-2 md:py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors flex-shrink-0"
             >
               <Send className="h-5 w-5" />
-              Send
+              <span className="hidden sm:inline">Send</span>
             </button>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
