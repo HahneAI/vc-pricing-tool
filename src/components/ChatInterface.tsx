@@ -35,33 +35,32 @@ const ChatInterface = () => {
   const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/1pfibny22qs82qd42jq2g3dppvl9r2eh';
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
-  // Send user message to Make.com
-  const sendUserMessageToMake = async (userMessageText: string) => {
-    try {
-      const response = await fetch(MAKE_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessageText,
-          timestamp: new Date().toISOString(),
-          sessionId: sessionIdRef.current,
-          source: 'quote_engine',
-          techId: '22222222-2222-2222-2222-222222222222'
-        })
-      });
+// Send user message to Make.com conversation handler
+const sendUserMessageToMake = async (userMessageText: string) => {
+  try {
+    const response = await fetch(MAKE_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_message: userMessageText,                    // ✅ Fixed field name
+        session_id: sessionIdRef.current,                // ✅ Fixed field name
+        user_id: '22222222-2222-2222-2222-222222222222', // ✅ Fixed field name
+        company_id: '11111111-1111-1111-1111-111111111111' // ✅ Added company_id
+      })
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message to Make.com');
-      }
-      
-      console.log('✅ User message sent to Make.com successfully');
-    } catch (error) {
-      console.error('❌ Error sending user message to Make.com:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error('Failed to send message to Make.com');
     }
-  };
+    
+    console.log('✅ User message sent to conversation handler successfully');
+  } catch (error) {
+    console.error('❌ Error sending user message to conversation handler:', error);
+    throw error;
+  }
+};
 
   // Poll for new AI messages with duplicate prevention
   const pollForAiMessages = async () => {
