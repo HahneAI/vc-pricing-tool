@@ -31,11 +31,10 @@ const ChatInterface = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Updated Make.com webhook URL
-  const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/1pfibny22qs82qd42jq2g3dppvl9r2eh';
-  const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
+// Updated Make.com AI agent webhook URL
+const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/swi79ksdmw85xk1wjmqpac4rvbcw0p7v';
 
-// Send user message to Make.com conversation handler
+// Send user message to Make.com AI agent  
 const sendUserMessageToMake = async (userMessageText: string) => {
   try {
     const response = await fetch(MAKE_WEBHOOK_URL, {
@@ -44,10 +43,11 @@ const sendUserMessageToMake = async (userMessageText: string) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user_message: userMessageText,                    // ✅ Fixed field name
-        session_id: sessionIdRef.current,                // ✅ Fixed field name
-        user_id: '22222222-2222-2222-2222-222222222222', // ✅ Fixed field name
-        company_id: '11111111-1111-1111-1111-111111111111' // ✅ Added company_id
+        message: userMessageText,                           // ✅ Back to original format
+        timestamp: new Date().toISOString(),                // ✅ Back to original format
+        sessionId: sessionIdRef.current,                    // ✅ Back to original format
+        source: 'quote_engine',                            // ✅ Back to original format
+        techId: '22222222-2222-2222-2222-222222222222'     // ✅ Back to original format
       })
     });
 
@@ -55,13 +55,12 @@ const sendUserMessageToMake = async (userMessageText: string) => {
       throw new Error('Failed to send message to Make.com');
     }
     
-    console.log('✅ User message sent to conversation handler successfully');
+    console.log('✅ User message sent to AI agent successfully');
   } catch (error) {
-    console.error('❌ Error sending user message to conversation handler:', error);
+    console.error('❌ Error sending user message to AI agent:', error);
     throw error;
   }
 };
-
   // Poll for new AI messages with duplicate prevention
   const pollForAiMessages = async () => {
     console.log('🔍 POLLING - Session:', sessionIdRef.current);
