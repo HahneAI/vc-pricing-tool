@@ -31,36 +31,38 @@ const ChatInterface = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-// Updated Make.com AI agent webhook URL
-const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/swi79ksdmw85xk1wjmqpac4rvbcw0p7v';
+  // AI Agent webhook URL
+  const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/swi79ksdmw85xk1wjmqpac4rvbcw0p7v';
+  const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
-// Send user message to Make.com AI agent  
-const sendUserMessageToMake = async (userMessageText: string) => {
-  try {
-    const response = await fetch(MAKE_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: userMessageText,                           // ✅ Back to original format
-        timestamp: new Date().toISOString(),                // ✅ Back to original format
-        sessionId: sessionIdRef.current,                    // ✅ Back to original format
-        source: 'quote_engine',                            // ✅ Back to original format
-        techId: '22222222-2222-2222-2222-222222222222'     // ✅ Back to original format
-      })
-    });
+  // Send user message to Make.com AI Agent
+  const sendUserMessageToMake = async (userMessageText: string) => {
+    try {
+      const response = await fetch(MAKE_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessageText,                           // ✅ Original AI agent format
+          timestamp: new Date().toISOString(),                // ✅ Original AI agent format
+          sessionId: sessionIdRef.current,                    // ✅ Original AI agent format
+          source: 'quote_engine',                            // ✅ Original AI agent format
+          techId: '22222222-2222-2222-2222-222222222222'     // ✅ Original AI agent format
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to send message to Make.com');
+      if (!response.ok) {
+        throw new Error('Failed to send message to Make.com');
+      }
+      
+      console.log('✅ User message sent to AI agent successfully');
+    } catch (error) {
+      console.error('❌ Error sending user message to AI agent:', error);
+      throw error;
     }
-    
-    console.log('✅ User message sent to AI agent successfully');
-  } catch (error) {
-    console.error('❌ Error sending user message to AI agent:', error);
-    throw error;
-  }
-};
+  };
+
   // Poll for new AI messages with duplicate prevention
   const pollForAiMessages = async () => {
     console.log('🔍 POLLING - Session:', sessionIdRef.current);
@@ -77,28 +79,16 @@ const sendUserMessageToMake = async (userMessageText: string) => {
       console.log('🔍 RECEIVED DATA:', newAiMessages);
       
       if (newAiMessages.length > 0) {
-        console.log('✅ PROCESSING MESSAGES:', newAiMessages.length);
+        console.log('✅ ADDING MESSAGES TO CHAT:', newAiMessages.length);
         
         const processedMessages = newAiMessages.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
 
-        // Add duplicate prevention logic
-        setMessages(currentMessages => {
-          const existingIds = new Set(currentMessages.map(msg => msg.id));
-          const uniqueNewMessages = processedMessages.filter(msg => !existingIds.has(msg.id));
-          
-          if (uniqueNewMessages.length > 0) {
-            console.log(`✅ ADDING ${uniqueNewMessages.length} NEW UNIQUE MESSAGES TO CHAT`);
-            setIsLoading(false);
-            lastPollTimeRef.current = new Date();
-            return [...currentMessages, ...uniqueNewMessages];
-          } else {
-            console.log('ℹ️ No new unique messages to add');
-            return currentMessages;
-          }
-        });
+        setMessages(prev => [...prev, ...processedMessages]);
+        setIsLoading(false);
+        lastPollTimeRef.current = new Date();
       }
     } catch (error) {
       console.error('Error polling for AI messages:', error);
