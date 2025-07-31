@@ -4,9 +4,17 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['Poppins', 'sans-serif'],
+      },
       colors: {
+        'enterprise-blue': '#1e40af',
+        'enterprise-blue-light': '#3b82f6',
+        'enterprise-gray-light': '#f8fafc',
+        'enterprise-gray': '#64748b',
         primary: {
-          50: '#EFF6FF',
+          50: '#eff6ff',
           100: '#DBEAFE',
           200: '#BFDBFE',
           300: '#93C5FD',
