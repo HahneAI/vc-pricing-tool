@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, Loader2, Bot, Sun, Moon } from 'lucide-react';
+import { Send, MessageCircle, Loader2, Bot, Sun, Moon, User, Clock, Check, CheckCheck, AlertCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../context/ThemeContext';
+import Avatar from './ui/Avatar';
+import TypingIndicator from './ui/TypingIndicator';
 
 interface Message {
   id: string;
@@ -9,7 +11,52 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
   sessionId?: string;
+  status?: 'sending' | 'sent' | 'delivered' | 'error';
 }
+
+const formatRelativeTime = (date: Date) => {
+  const now = new Date();
+  const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
+  const minutes = Math.round(seconds / 60);
+
+  if (seconds < 5) return "just now";
+  if (minutes < 1) return `${seconds} seconds ago`;
+  if (minutes < 60) return `${minutes} minutes ago`;
+
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatMessageText = (text: string) => {
+  let html = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  const lines = html.split('\n');
+  let inList = false;
+  html = lines.map(line => {
+    if (line.startsWith('- ')) {
+      const listItem = `<li>${line.substring(2)}</li>`;
+      if (!inList) {
+        inList = true;
+        return `<ul>${listItem}`;
+      }
+      return listItem;
+    } else {
+      if (inList) {
+        inList = false;
+        return `</ul>${line}`;
+      }
+      return line;
+    }
+  }).join('<br />');
+
+  if (inList) {
+    html += '</ul>';
+  }
+
+  return html.replace(/<br \/>/g, '\n').replace(/\n/g, '<br />');
+};
+
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
@@ -111,32 +158,26 @@ const ChatInterface = () => {
     if (!inputText.trim()) return;
 
     const userMessageText = inputText;
+    const messageId = uuidv4();
     const userMessage: Message = {
-      id: uuidv4(),
+      id: messageId,
       text: userMessageText,
       sender: 'user',
       timestamp: new Date(),
-      sessionId: sessionIdRef.current
+      sessionId: sessionIdRef.current,
+      status: 'sending',
     };
 
-    // Add user message immediately
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
-    setIsLoading(true); // Start loading indicator
+    setIsLoading(true);
 
     try {
       await sendUserMessageToMake(userMessageText);
-      // Keep loading state - AI response will come via polling
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'sent' } : m));
     } catch (error) {
-      const errorMessage: Message = {
-        id: uuidv4(),
-        text: "Sorry, there was an error sending your message. Please try again.",
-        sender: 'ai',
-        timestamp: new Date(),
-        sessionId: sessionIdRef.current
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      setIsLoading(false); // Stop loading if sending fails
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'error', text: `${m.text}\n\n[Error: Could not send message]` } : m));
+      setIsLoading(false);
     }
   };
 
@@ -148,113 +189,115 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col p-4">
+    <div className="h-screen flex flex-col bg-enterprise-gray-light dark:bg-gray-900 font-sans">
       {/* Header */}
-      <div className="w-full mb-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
+      <header className="w-full p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="bg-primary-600 text-white p-3 rounded-lg">
-              <MessageCircle className="h-8 w-8" />
+            <div className="bg-enterprise-blue text-white p-2 rounded-lg shadow-md">
+              <MessageCircle className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl font-bold font-display text-gray-800 dark:text-white">
                 TradeSphere
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">AI Pricing Tool</p>
+              <p className="text-sm text-enterprise-gray dark:text-gray-400">AI Pricing Assistant</p>
             </div>
           </div>
           
-          {/* Theme Toggle */}
-          <button 
-            className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? 
-              <Sun className="h-6 w-6 text-gray-600 dark:text-gray-400" /> : 
-              <Moon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-            }
-          </button>
-        </div>
-      </div>
-
-      {/* Chat Container */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col overflow-hidden min-h-0">
-        
-        {/* Chat Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 min-h-0">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                  message.sender === 'user'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                }`}
-              >
-                {/* Enhanced message rendering with formatting support */}
-                <div 
-                  className="text-sm whitespace-pre-wrap"
-                  dangerouslySetInnerHTML={{
-                    __html: message.text
-                      .replace(/\n/g, '<br />')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                  }}
-                />
-                <p className="text-xs mt-2 opacity-70">
-                  {message.timestamp.toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
-          ))}
-          
-          {/* Enhanced AI Thinking State */}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg flex items-center gap-3">
-                <Bot className="h-5 w-5 text-primary-600" />
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    AI is analyzing your request...
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Chat Input Area */}
-        <div className="border-t dark:border-gray-700 p-4 md:p-6 bg-white dark:bg-gray-800 flex-shrink-0">
-          <div className="flex space-x-2 md:space-x-3">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask me about pricing, quote a job, or chat about business..."
-              className="flex-1 px-3 md:px-4 py-2 md:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm md:text-lg"
-              disabled={isLoading}
-            />
+          <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
             <button
-              onClick={handleSendMessage}
-              disabled={isLoading || !inputText.trim()}
-              className="px-4 md:px-6 py-2 md:py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors flex-shrink-0"
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <Send className="h-5 w-5" />
-              <span className="hidden sm:inline">Send</span>
+              {theme === 'dark' ?
+                <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" /> :
+                <Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              }
             </button>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
-            Session ID: {sessionIdRef.current}
-          </p>
         </div>
-      </div>
+      </header>
+
+      {/* Chat Container */}
+      <main className="flex-1 flex flex-col overflow-hidden p-4">
+        <div className="flex-1 bg-white dark:bg-gray-800/50 rounded-2xl shadow-professional flex flex-col overflow-hidden min-h-0 glass-effect">
+
+          {/* Chat Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {message.sender === 'ai' && <Avatar sender="ai" />}
+                <div
+                  className={`max-w-md lg:max-w-2xl px-5 py-3 rounded-2xl shadow-md message-bubble-animate ${
+                    message.sender === 'user'
+                      ? 'bg-enterprise-blue text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100'
+                  }`}
+                >
+                  <div
+                    className="text-base whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: formatMessageText(message.text) }}
+                  />
+                  <div className="flex items-center justify-end mt-2">
+                    <p className="text-xs opacity-60">
+                      {formatRelativeTime(message.timestamp)}
+                    </p>
+                    {message.sender === 'user' && message.status && (
+                      <div className="ml-2">
+                        {message.status === 'sending' && <Clock className="h-3 w-3 opacity-60" />}
+                        {message.status === 'sent' && <Check className="h-3 w-3 opacity-60" />}
+                        {message.status === 'delivered' && <CheckCheck className="h-3 w-3 opacity-60" />}
+                        {message.status === 'error' && <AlertCircle className="h-3 w-3 text-red-400" />}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {message.sender === 'user' && <Avatar sender="user" />}
+              </div>
+            ))}
+
+            {/* AI Thinking State */}
+            {isLoading && (
+              <div className="flex items-start gap-3 justify-start">
+                <Avatar sender="ai" />
+                <div className="bg-white dark:bg-gray-700 px-5 py-3 rounded-2xl shadow-md flex items-center gap-3">
+                  <TypingIndicator />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input Area */}
+          <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/30 dark:bg-gray-800/30 flex-shrink-0">
+            <div className="flex items-center space-x-3 max-w-4xl mx-auto">
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Describe the job details to generate a price..."
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-enterprise-blue-light focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-base resize-none"
+                rows={1}
+                disabled={isLoading}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isLoading || !inputText.trim()}
+                className="px-5 py-3 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 btn-gradient shadow-md"
+              >
+                <Send className="h-5 w-5" />
+                <span className="hidden sm:inline font-semibold">Send</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
