@@ -18,11 +18,21 @@ export const useAppLoading = (config: LoadingConfig = {}): boolean => {
   const [isAppLoading, setIsAppLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsAppLoading(false);
-    }, config.duration || LOADING_DURATION);
+    // Add safety check for bolt.new environment
+    if (typeof window !== 'undefined' && window.setTimeout) {
+      const timer = window.setTimeout(() => {
+        setIsAppLoading(false);
+      }, config.duration || LOADING_DURATION);
 
-    return () => clearTimeout(timer);
+      return () => {
+        if (window.clearTimeout) {
+          window.clearTimeout(timer);
+        }
+      };
+    } else {
+      // Fallback for environments without proper timer support
+      setIsAppLoading(false);
+    }
   }, [config.duration]);
 
   return isAppLoading;
