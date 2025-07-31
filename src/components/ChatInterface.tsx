@@ -199,7 +199,7 @@ const ChatInterface = () => {
       {/* Header */}
       <header className="w-full p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <<div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-3">  ← YOUR PASTE STARTS HERE
             <div className="bg-primary-600 text-white p-3 rounded-lg shadow-md">
               <img src={config.logoUrl} alt={`${config.companyName} Logo`} className="h-8 w-8" />
