@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, MessageCircle, Loader2, Bot, Sun, Moon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../context/ThemeContext';
+import { config } from '../utils/environment-config';
 
 interface Message {
   id: string;
@@ -22,7 +23,7 @@ const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Let's make some profit. What are we doing today?",
+      text: config.welcomeMessage,
       sender: 'ai',
       timestamp: new Date(),
       sessionId: sessionIdRef.current
@@ -32,11 +33,15 @@ const ChatInterface = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // AI Agent webhook URL
-  const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/swi79ksdmw85xk1wjmqpac4rvbcw0p7v';
+  const MAKE_WEBHOOK_URL = config.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
   // Send user message to Make.com AI Agent
   const sendUserMessageToMake = async (userMessageText: string) => {
+    if (!MAKE_WEBHOOK_URL) {
+      console.warn("Make.com webhook URL is not configured. Skipping message sending.");
+      return;
+    }
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
@@ -154,11 +159,11 @@ const ChatInterface = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-primary-600 text-white p-3 rounded-lg">
-              <MessageCircle className="h-8 w-8" />
+              <img src={config.logoUrl} alt={`${config.companyName} Logo`} className="h-8 w-8" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                TradeSphere
+                {config.companyName}
               </h1>
               <p className="text-gray-600 dark:text-gray-400">AI Pricing Tool</p>
             </div>

@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import { ThemeProvider } from './context/ThemeContext';
+import { config } from './utils/environment-config';
 
 function App() {
   useEffect(() => {
     // Set app title
-    document.title = 'TradeSphere - AI Pricing Tool';
+    document.title = `${config.companyName} - AI Pricing Tool`;
+
+    // Set primary color CSS variable
+    document.documentElement.style.setProperty('--primary-color', config.primaryColor);
   }, []);
   
   return (
