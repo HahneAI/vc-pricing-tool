@@ -2,12 +2,19 @@ import { useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import LoadingScreen from './components/ui/LoadingScreen';
 import { ThemeProvider } from './context/ThemeContext';
+import { config } from './utils/environment-config';
 import { useAppLoading } from './utils/loading-manager';
+
 
 function App() {
   const isAppLoading = useAppLoading();
 
   useEffect(() => {
+    // Set app title
+    document.title = `${config.companyName} - AI Pricing Tool`;
+
+    // Set primary color CSS variable
+    document.documentElement.style.setProperty('--primary-color', config.primaryColor);
     document.title = 'TradeSphere - AI Pricing Tool';
   }, []);
 
