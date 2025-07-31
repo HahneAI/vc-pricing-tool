@@ -200,19 +200,12 @@ const ChatInterface = () => {
       <header className="w-full p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="bg-primary-600 text-white p-3 rounded-lg">
+            <div className="bg-primary-600 text-white p-3 rounded-lg shadow-md">
               <img src={config.logoUrl} alt={`${config.companyName} Logo`} className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {config.companyName}
-
-            <div className="bg-enterprise-blue text-white p-2 rounded-lg shadow-md">
-              <MessageCircle className="h-6 w-6" />
-            </div>
-            <div>
               <h1 className="text-xl font-bold font-display text-gray-800 dark:text-white">
-                TradeSphere
+      {config.companyName}
               </h1>
               <p className="text-sm text-enterprise-gray dark:text-gray-400">AI Pricing Assistant</p>
             </div>
