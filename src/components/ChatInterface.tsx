@@ -201,12 +201,8 @@ const ChatInterface = () => {
   <div className="flex items-center justify-between max-w-6xl mx-auto">
     <div className="flex items-center gap-3">
       <div className="bg-primary-600 text-white p-3 rounded-lg shadow-md">
-        {config.logoUrl ? (
-          <img src={config.logoUrl} alt={`${config.companyName} Logo`} className="h-8 w-8" />
-        ) : (
-          <MessageCircle className="h-8 w-8" />
-        )}
-      </div>
+  <MessageCircle className="h-8 w-8" />
+</div>
       <div>
         <h1 className="text-xl font-bold font-display text-gray-800 dark:text-white">
           {config.companyName}
