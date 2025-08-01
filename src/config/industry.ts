@@ -345,6 +345,16 @@ export const getSmartVisualThemeConfig = (theme: Theme): SmartVisualThemeConfig 
   };
 };
 
+/**
+ * @deprecated Use getSmartVisualThemeConfig instead.
+ * This function is for backward compatibility to prevent app crashes.
+ * It defaults to the 'light' theme.
+ */
+export const getVisualThemeConfig = () => {
+    console.warn("getVisualThemeConfig is deprecated and will be removed. Use getSmartVisualThemeConfig(theme) for dynamic theme support.");
+    return getSmartVisualThemeConfig('light');
+};
+
 export const getSeasonalConfig = (): SeasonalConfig => {
   const industryType = import.meta.env.VITE_INDUSTRY_TYPE;
   const seasonalThemes = import.meta.env.VITE_USE_SEASONAL_THEMES === 'true';
