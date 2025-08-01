@@ -1,52 +1,72 @@
 import React from 'react';
 import * as Icons from 'lucide-react';
-import { config } from '../../utils/environment-config';
-
-// A bit of a hack to dynamically render Lucide icons from a string
-const DynamicIcon = ({ name, ...props }: { name: string } & Icons.LucideProps) => {
-  const IconComponent = Icons[name as keyof typeof Icons];
-
-  if (!IconComponent) {
-    // Fallback icon if the specified icon name is not found
-    return <Icons.MessageCircle {...props} />;
-  }
-
-  return <IconComponent {...props} />;
-};
-
+import { getLoadingConfig } from '../../config/industry';
 
 const LoadingScreen = () => {
+  const config = getLoadingConfig();
+
+  const IconComponent = Icons[config.icon] || Icons.MessageCircle;
+
   return (
-    <div className="fixed inset-0 bg-enterprise-gray-light flex flex-col items-center justify-center z-50" style={{
-        backgroundColor: 'var(--landscape-neutral)'
-    }}>
+    <div className="fixed inset-0 bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center z-50">
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          {/* Logo with pulse animation */}
-          <div className="w-20 h-20 bg-enterprise-blue text-white rounded-2xl flex items-center justify-center shadow-professional-lg" style={{
-              backgroundColor: 'var(--landscape-primary)',
-              color: 'white'
-          }}>
-            <DynamicIcon name={config.loadingIcon} size={40} />
+          {/* Animated logo with industry-specific effects */}
+          <div
+            className="w-20 h-20 text-white rounded-2xl flex items-center justify-center shadow-2xl"
+            style={{ backgroundColor: config.colors.primary }}
+          >
+            {config.type === 'growth' && (
+              <div className="growth-animation">
+                <IconComponent size={40} className="animate-grow" />
+              </div>
+            )}
+            {config.type === 'building' && (
+              <div className="building-animation">
+                <IconComponent size={40} className="animate-build" />
+              </div>
+            )}
+            {config.type === 'generic' && (
+              <div className="pulse-animation">
+                <IconComponent size={40} className="animate-pulse-gentle" />
+              </div>
+            )}
           </div>
-          {/* Subtle ping animation */}
-          <div className="absolute inset-0 bg-enterprise-blue-light rounded-2xl animate-ping opacity-30 -z-10" style={{
-              backgroundColor: 'var(--landscape-accent)'
-          }}></div>
+
+          {/* Specialized animation effects */}
+          <div className="absolute inset-0 -z-10">
+            {config.type === 'growth' && (
+              <>
+                <div className="absolute inset-0 bg-green-400 rounded-2xl animate-ping opacity-20"></div>
+                <div className="absolute inset-0 bg-green-300 rounded-2xl animate-ping opacity-15 animation-delay-75"></div>
+              </>
+            )}
+            {config.type === 'building' && (
+              <>
+                <div className="absolute inset-0 bg-orange-400 rounded-2xl animate-ping opacity-20"></div>
+                <div className="absolute inset-0 bg-yellow-400 rounded-2xl animate-ping opacity-15 animation-delay-75"></div>
+              </>
+            )}
+            {config.type === 'generic' && (
+              <div
+                className="absolute inset-0 rounded-2xl animate-ping opacity-30 -z-10"
+                style={{ backgroundColor: config.colors.accent }}
+              ></div>
+            )}
+          </div>
         </div>
 
-        {/* Brand Name */}
-        <h1 className="text-4xl font-display font-bold text-enterprise-blue mt-6" style={{
-            color: 'var(--landscape-primary)'
-        }}>
-          {config.companyName}
+        {/* Brand Name with Fade-in */}
+        <h1
+          className="text-4xl font-display font-bold mt-6 animate-fade-in"
+          style={{ color: config.colors.primary }}
+        >
+          {import.meta.env.VITE_COMPANY_NAME || 'TradeSphere'}
         </h1>
 
-        {/* Loading text */}
-        <p className="text-enterprise-gray" style={{
-            color: 'var(--landscape-secondary)'
-        }}>
-          {config.statusMessages.processing}
+        {/* Loading Message */}
+        <p className="text-gray-600 dark:text-gray-400 animate-fade-in-delay">
+          {config.message}
         </p>
       </div>
     </div>
