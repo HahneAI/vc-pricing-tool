@@ -206,7 +206,7 @@ export const getTerminologyConfig = (): TerminologyConfig => {
         projectLanguage: import.meta.env.VITE_PROJECT_LANGUAGE || 'outdoor living spaces',
         estimateLanguage: import.meta.env.VITE_ESTIMATE_LANGUAGE || 'landscape investment',
         completionTerms: 'property transformation',
-        placeholderExamples: import.meta.env.VITE_PLACEHOLDER_EXAMPLES || 'e.g., backyard patio installation, retaining wall design, irrigation system, plant bed renovation',
+        placeholderExamples: import.meta.env.VITE_PLACEHOLDER_EXAMPLES || 'I can only wish for simple mulch math...',
         buttonTexts: {
           send: 'Get My Landscape Estimate',
           clear: 'Start New Project Design',
