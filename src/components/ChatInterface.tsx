@@ -7,7 +7,7 @@ import {
     getTerminologyConfig,
     getVisualThemeConfig,
     getSeasonalConfig
-} from '../../config/industry';
+} from '../config/industry';
 import { triggerSendEffect } from './ui/IndustryEffects';
 import Avatar from './ui/Avatar';
 import TypingIndicator from './ui/TypingIndicator';
