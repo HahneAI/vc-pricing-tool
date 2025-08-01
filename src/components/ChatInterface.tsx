@@ -5,16 +5,18 @@ import { useTheme } from '../context/ThemeContext';
 import {
     getCoreConfig,
     getTerminologyConfig,
-    getVisualThemeConfig,
-    getSeasonalConfig
+    getSmartVisualThemeConfig,
+    getSeasonalConfig,
+    SmartVisualThemeConfig
 } from '../config/industry';
 import { triggerSendEffect } from './ui/IndustryEffects';
-import Avatar from './ui/Avatar';
 import TypingIndicator from './ui/TypingIndicator';
+import { ThemeAwareMessageBubble } from './ui/ThemeAwareMessageBubble';
+import { ThemeAwareAvatar } from './ui/ThemeAwareAvatar';
+import { Message } from '../types/job';
 
 const coreConfig = getCoreConfig();
 const terminologyConfig = getTerminologyConfig();
-const visualConfig = getVisualThemeConfig();
 const seasonalConfig = getSeasonalConfig();
 
 const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.LucideProps) => {
@@ -24,15 +26,6 @@ const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.Lu
   }
   return <IconComponent {...props} />;
 };
-
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: Date;
-  sessionId?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'error';
-}
 
 const formatRelativeTime = (date: Date) => {
   const now = new Date();
@@ -87,44 +80,9 @@ const StatusIcon = ({ status }: { status: Message['status'] }) => {
     }
 };
 
-const MessageBubble = ({ message }: { message: Message }) => {
-    const animationClass = visualConfig.animations.messageEntry === 'grow' ? 'landscaping-grow' : 'tech-slide';
-
-    return (
-        <div className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {message.sender === 'ai' && <Avatar sender="ai" />}
-            <div
-                className={`max-w-md lg:max-w-2xl px-5 py-3 shadow-md message-bubble-animate ${animationClass} ${
-                visualConfig.patterns.componentShape === 'organic' ? 'rounded-2xl' : 'rounded-lg'
-                } ${message.sender === 'user' ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}
-                style={{
-                    backgroundColor: message.sender === 'user' ? visualConfig.colors.primary : visualConfig.colors.surface,
-                    borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.5rem' : '0.5rem'
-                }}
-            >
-                <div
-                    className="text-base whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{ __html: formatMessageText(message.text) }}
-                />
-                <div className="flex items-center justify-end mt-2">
-                    <p className="text-xs opacity-60">
-                        {formatRelativeTime(message.timestamp)}
-                    </p>
-                    {message.sender === 'user' && message.status && (
-                        <div className="ml-2">
-                            <StatusIcon status={message.status} />
-                        </div>
-                    )}
-                </div>
-            </div>
-            {message.sender === 'user' && <Avatar sender="user" />}
-        </div>
-    );
-};
-
-
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
+  const visualConfig = getSmartVisualThemeConfig(theme);
   
   const sessionIdRef = useRef<string>(`quote_session_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -239,77 +197,125 @@ const ChatInterface = () => {
   const backgroundClass = visualConfig.patterns.backgroundTexture === 'subtle-organic' ? 'background-organic' : 'background-tech';
 
   return (
-    <div className={`h-screen flex flex-col font-sans ${backgroundClass}`} style={{ backgroundColor: visualConfig.colors.background }}>
-      <header className="w-full p-4 border-b flex-shrink-0" style={{ borderColor: visualConfig.colors.secondary, backgroundColor: visualConfig.colors.surface }}>
+    <div
+      className="h-screen flex flex-col font-sans transition-colors duration-300"
+      style={{ backgroundColor: visualConfig.colors.background }}
+    >
+      {/* Header with proper theme adaptation */}
+      <header
+        className="w-full p-4 border-b flex-shrink-0 transition-colors duration-300"
+        style={{
+          backgroundColor: visualConfig.colors.surface,
+          borderBottomColor: theme === 'light' ? '#e5e7eb' : '#374151'
+        }}
+      >
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="text-white p-3 rounded-lg shadow-md" style={{ backgroundColor: visualConfig.colors.primary }}>
+            <div
+              className="text-white p-3 rounded-lg shadow-md transition-all duration-300"
+              style={{
+                backgroundColor: visualConfig.colors.primary,
+                color: visualConfig.colors.text.onPrimary
+              }}
+            >
               <DynamicIcon name={coreConfig.headerIcon} className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-xl font-bold font-display" style={{ color: visualConfig.colors.primary }}>
+              <h1
+                className="text-xl font-bold transition-colors duration-300"
+                style={{ color: visualConfig.colors.text.primary }}
+              >
                 {coreConfig.companyName}
               </h1>
-              <p className="text-sm" style={{ color: visualConfig.colors.secondary }}>{terminologyConfig.businessType}</p>
+              <p
+                className="text-sm transition-colors duration-300"
+                style={{ color: visualConfig.colors.text.secondary }}
+              >
+                {terminologyConfig.businessType}
+              </p>
             </div>
           </div>
-          <div className='flex flex-col items-end'>
-            {seasonalConfig.seasonalMessage && (
-                <p className="text-xs text-right mb-1" style={{ color: visualConfig.colors.accent }}>
-                    {seasonalConfig.seasonalMessage}
-                </p>
-            )}
-            <div className="flex items-center gap-2">
-                <button
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                {theme === 'dark' ?
-                    <Icons.Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" /> :
-                    <Icons.Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                }
-                </button>
-            </div>
-          </div>
+
+          {/* Enhanced Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-3 rounded-full transition-all duration-300 hover:scale-105"
+            style={{
+              backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
+              color: visualConfig.colors.text.secondary
+            }}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ?
+              <Icons.Sun className="h-6 w-6" /> :
+              <Icons.Moon className="h-6 w-6" />
+            }
+          </button>
         </div>
       </header>
 
+      {/* Main Chat Area */}
       <main className="flex-1 flex flex-col overflow-hidden p-4">
-        <div className="flex-1 bg-white/50 dark:bg-gray-800/50 rounded-2xl shadow-professional flex flex-col overflow-hidden min-h-0 glass-effect"
-             style={{
-                borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.5rem' : '0.75rem'
-             }}
+        <div
+          className="flex-1 rounded-2xl shadow-lg flex flex-col overflow-hidden min-h-0 transition-all duration-300"
+          style={{
+            backgroundColor: visualConfig.colors.surface,
+            borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.5rem' : '0.75rem'
+          }}
         >
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <ThemeAwareMessageBubble
+                key={message.id}
+                message={message}
+                visualConfig={visualConfig}
+                theme={theme}
+              />
             ))}
 
+            {/* Typing Indicator */}
             {isLoading && (
               <div className="flex items-start gap-3 justify-start">
-                <Avatar sender="ai" />
-                <div className="bg-white dark:bg-gray-700 px-5 py-3 rounded-2xl shadow-md flex items-center gap-3">
+                <ThemeAwareAvatar sender="ai" visualConfig={visualConfig} />
+                <div
+                  className="px-5 py-3 rounded-2xl shadow-md flex items-center gap-3 transition-colors duration-300"
+                  style={{ backgroundColor: visualConfig.colors.elevated }}
+                >
                   <TypingIndicator />
-                  <p className="text-sm" style={{ color: visualConfig.colors.secondary }}>{terminologyConfig.statusMessages.thinking}</p>
+                  <p
+                    className="text-sm"
+                    style={{ color: visualConfig.colors.text.secondary }}
+                  >
+                    {terminologyConfig.statusMessages.thinking}
+                  </p>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/30 dark:bg-gray-800/30 flex-shrink-0">
+          {/* Input Area */}
+          <div
+            className="border-t p-4 transition-colors duration-300"
+            style={{
+              backgroundColor: visualConfig.colors.surface,
+              borderTopColor: theme === 'light' ? '#e5e7eb' : '#374151'
+            }}
+          >
             <div className="flex items-center space-x-3 max-w-4xl mx-auto">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={terminologyConfig.placeholderExamples}
-                className="flex-1 px-4 py-3 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-base resize-none"
+                className="flex-1 px-4 py-3 rounded-xl resize-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
-                    borderColor: visualConfig.colors.secondary,
-                    '--tw-ring-color': visualConfig.colors.accent,
-                    borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
+                  backgroundColor: visualConfig.colors.background,
+                  color: visualConfig.colors.text.primary,
+                  borderColor: visualConfig.colors.secondary,
+                  '--tw-ring-color': visualConfig.colors.primary,
+                  borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
                 }}
                 rows={1}
                 disabled={isLoading}
@@ -318,14 +324,17 @@ const ChatInterface = () => {
                 ref={sendButtonRef}
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputText.trim()}
-                className="px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md"
+                className="px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
                 style={{
-                    backgroundColor: visualConfig.colors.primary,
-                    borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
+                  backgroundColor: visualConfig.colors.primary,
+                  color: visualConfig.colors.text.onPrimary,
+                  borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
                 }}
               >
                 <DynamicIcon name="Send" className="h-5 w-5" />
-                <span className="hidden sm:inline font-semibold">{terminologyConfig.buttonTexts.send}</span>
+                <span className="hidden sm:inline font-semibold">
+                  {terminologyConfig.buttonTexts.send}
+                </span>
               </button>
             </div>
           </div>
