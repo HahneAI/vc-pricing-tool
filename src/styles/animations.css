@@ -1,0 +1,102 @@
+/* === LANDSCAPING ANIMATIONS === */
+@keyframes grow-in {
+  0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes leaf-flutter {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(2deg); }
+  75% { transform: translateY(5px) rotate(-2deg); }
+}
+
+@keyframes stone-settle {
+  0% { transform: scale(1.1) translateY(-5px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* === TECH/TRADESPHERE ANIMATIONS === */
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+@keyframes slide-in-tech {
+  0% { transform: translateX(-20px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* From LoadingScreen.tsx */
+@keyframes grow {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(0.95); }
+}
+
+@keyframes build {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(10deg) scale(1.1); }
+    75% { transform: rotate(-10deg) scale(1.1); }
+}
+
+@keyframes pulse-gentle {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.03); opacity: 1; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-delay {
+    0% { opacity: 0; transform: translateY(10px); }
+    50% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+
+/* === UNIVERSAL CLASSES === */
+.message-bubble-animate {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation-fill-mode: both;
+}
+
+.landscaping-grow { animation-name: grow-in; }
+.tech-slide { animation-name: slide-in-tech; }
+.gentle-pulse-effect { animation-name: gentle-pulse; }
+.animate-grow { animation: grow 1.5s infinite ease-in-out; }
+.animate-build { animation: build 1.2s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+.animate-pulse-gentle { animation: pulse-gentle 2s infinite ease-in-out; }
+.animate-fade-in { animation: fade-in 0.8s both; }
+.animate-fade-in-delay { animation: fade-in-delay 1.2s both; }
+
+/* === INDUSTRY PATTERNS === */
+.background-organic {
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(46, 139, 87, 0.05) 0%, transparent 25%),
+    radial-gradient(circle at 75% 75%, rgba(139, 69, 19, 0.05) 0%, transparent 25%);
+}
+
+.background-tech {
+  background-image:
+    linear-gradient(45deg, rgba(37, 99, 235, 0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(37, 99, 235, 0.05) 25%, transparent 25%);
+  background-size: 20px 20px;
+}
+
+/* === COMPONENT SHAPES === */
+.organic-shape {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tech-shape {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.animation-delay-75 {
+    animation-delay: 75ms;
+}

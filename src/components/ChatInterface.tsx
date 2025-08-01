@@ -1,11 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, Loader2, Bot, Sun, Moon, User, Clock, Check, CheckCheck, AlertCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../context/ThemeContext';
-import { config } from '../utils/environment-config';
+import {
+    getCoreConfig,
+    getTerminologyConfig,
+    getVisualThemeConfig,
+    getSeasonalConfig
+} from '../../config/industry';
+import { triggerSendEffect } from './ui/IndustryEffects';
 import Avatar from './ui/Avatar';
 import TypingIndicator from './ui/TypingIndicator';
 
+const coreConfig = getCoreConfig();
+const terminologyConfig = getTerminologyConfig();
+const visualConfig = getVisualThemeConfig();
+const seasonalConfig = getSeasonalConfig();
+
+const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.LucideProps) => {
+  const IconComponent = Icons[name];
+  if (!IconComponent) {
+    return <Icons.MessageCircle {...props} />;
+  }
+  return <IconComponent {...props} />;
+};
 
 interface Message {
   id: string;
@@ -59,19 +77,66 @@ const formatMessageText = (text: string) => {
   return html.replace(/<br \/>/g, '\n').replace(/\n/g, '<br />');
 };
 
+const StatusIcon = ({ status }: { status: Message['status'] }) => {
+    switch (status) {
+        case 'sending': return <Icons.Clock className="h-3 w-3 opacity-60" />;
+        case 'sent': return <Icons.Check className="h-3 w-3 opacity-60" />;
+        case 'delivered': return <Icons.CheckCheck className="h-3 w-3 opacity-60" />;
+        case 'error': return <Icons.AlertCircle className="h-3 w-3 text-red-400" />;
+        default: return null;
+    }
+};
+
+const MessageBubble = ({ message }: { message: Message }) => {
+    const animationClass = visualConfig.animations.messageEntry === 'grow' ? 'landscaping-grow' : 'tech-slide';
+
+    return (
+        <div className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {message.sender === 'ai' && <Avatar sender="ai" />}
+            <div
+                className={`max-w-md lg:max-w-2xl px-5 py-3 shadow-md message-bubble-animate ${animationClass} ${
+                visualConfig.patterns.componentShape === 'organic' ? 'rounded-2xl' : 'rounded-lg'
+                } ${message.sender === 'user' ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}
+                style={{
+                    backgroundColor: message.sender === 'user' ? visualConfig.colors.primary : visualConfig.colors.surface,
+                    borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.5rem' : '0.5rem'
+                }}
+            >
+                <div
+                    className="text-base whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: formatMessageText(message.text) }}
+                />
+                <div className="flex items-center justify-end mt-2">
+                    <p className="text-xs opacity-60">
+                        {formatRelativeTime(message.timestamp)}
+                    </p>
+                    {message.sender === 'user' && message.status && (
+                        <div className="ml-2">
+                            <StatusIcon status={message.status} />
+                        </div>
+                    )}
+                </div>
+            </div>
+            {message.sender === 'user' && <Avatar sender="user" />}
+        </div>
+    );
+};
+
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
   
-  // Generate a unique session ID that persists for this chat session
   const sessionIdRef = useRef<string>(`quote_session_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastPollTimeRef = useRef<Date>(new Date());
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
+
+  const welcomeMessage = import.meta.env.VITE_WELCOME_MESSAGE || `Welcome to ${coreConfig.companyName}! How can I help you today?`;
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: config.welcomeMessage,
+      text: welcomeMessage,
       sender: 'ai',
       timestamp: new Date(),
       sessionId: sessionIdRef.current
@@ -80,11 +145,9 @@ const ChatInterface = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // AI Agent webhook URL
-  const MAKE_WEBHOOK_URL = config.makeWebhookUrl;
+  const MAKE_WEBHOOK_URL = coreConfig.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
-  // Send user message to Make.com AI Agent
   const sendUserMessageToMake = async (userMessageText: string) => {
     if (!MAKE_WEBHOOK_URL) {
       console.warn("Make.com webhook URL is not configured. Skipping message sending.");
@@ -93,22 +156,16 @@ const ChatInterface = () => {
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: userMessageText,                           // ✅ Original AI agent format
-          timestamp: new Date().toISOString(),                // ✅ Original AI agent format
-          sessionId: sessionIdRef.current,                    // ✅ Original AI agent format
-          source: 'quote_engine',                            // ✅ Original AI agent format
-          techId: '22222222-2222-2222-2222-222222222222'     // ✅ Original AI agent format
+          message: userMessageText,
+          timestamp: new Date().toISOString(),
+          sessionId: sessionIdRef.current,
+          source: 'quote_engine',
+          techId: '22222222-2222-2222-2222-222222222222'
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message to Make.com');
-      }
-      
+      if (!response.ok) throw new Error('Failed to send message to Make.com');
       console.log('✅ User message sent to AI agent successfully');
     } catch (error) {
       console.error('❌ Error sending user message to AI agent:', error);
@@ -116,52 +173,39 @@ const ChatInterface = () => {
     }
   };
 
-  // Poll for new AI messages with duplicate prevention
-  const pollForAiMessages = async () => {
-    console.log('🔍 POLLING - Session:', sessionIdRef.current);
-    console.log('🔍 POLLING - URL:', NETLIFY_API_URL);
-    
+  const pollForAiMessages = React.useCallback(async () => {
     try {
       const response = await fetch(`${NETLIFY_API_URL}?since=${lastPollTimeRef.current.toISOString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch AI messages');
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch AI messages');
       const newAiMessages = await response.json();
-      console.log('🔍 RECEIVED DATA:', newAiMessages);
       
       if (newAiMessages.length > 0) {
-        console.log('✅ ADDING MESSAGES TO CHAT:', newAiMessages.length);
-        
         const processedMessages = newAiMessages.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
-
         setMessages(prev => [...prev, ...processedMessages]);
         setIsLoading(false);
         lastPollTimeRef.current = new Date();
       }
-    } catch (error) {
-      console.error('Error polling for AI messages:', error);
+    } catch (e) {
+      console.error('Error polling for AI messages:', e);
     }
-  };
+  }, [NETLIFY_API_URL]);
 
-  // Set up polling interval
   useEffect(() => {
-    const pollingInterval = setInterval(pollForAiMessages, 3000); // Poll every 3 seconds
-    
+    const pollingInterval = setInterval(pollForAiMessages, 3000);
     return () => clearInterval(pollingInterval);
-  }, []); // Empty dependency array - we want this to run once
+  }, [pollForAiMessages]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
+
+    triggerSendEffect(sendButtonRef.current);
 
     const userMessageText = inputText;
     const messageId = uuidv4();
@@ -173,15 +217,13 @@ const ChatInterface = () => {
       sessionId: sessionIdRef.current,
       status: 'sending',
     };
-
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
-
     try {
       await sendUserMessageToMake(userMessageText);
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'sent' } : m));
-    } catch (error) {
+    } catch {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'error', text: `${m.text}\n\n[Error: Could not send message]` } : m));
       setIsLoading(false);
     }
@@ -194,110 +236,96 @@ const ChatInterface = () => {
     }
   };
 
+  const backgroundClass = visualConfig.patterns.backgroundTexture === 'subtle-organic' ? 'background-organic' : 'background-tech';
+
   return (
-    <div className="h-screen flex flex-col bg-enterprise-gray-light dark:bg-gray-900 font-sans">
-      {/* Header */}
-      <header className="w-full p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-  <div className="flex items-center justify-between max-w-6xl mx-auto">
-    <div className="flex items-center gap-3">
-      <div className="bg-primary-600 text-white p-3 rounded-lg shadow-md">
-  <MessageCircle className="h-8 w-8" />
-</div>
-      <div>
-        <h1 className="text-xl font-bold font-display text-gray-800 dark:text-white">
-          {config.companyName}
-        </h1>
-        <p className="text-sm text-enterprise-gray dark:text-gray-400">AI Pricing Assistant</p>
-      </div>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <button
-        className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ?
-          <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" /> :
-          <Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-        }
-      </button>
-    </div>
-  </div>
-</header>
+    <div className={`h-screen flex flex-col font-sans ${backgroundClass}`} style={{ backgroundColor: visualConfig.colors.background }}>
+      <header className="w-full p-4 border-b flex-shrink-0" style={{ borderColor: visualConfig.colors.secondary, backgroundColor: visualConfig.colors.surface }}>
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="text-white p-3 rounded-lg shadow-md" style={{ backgroundColor: visualConfig.colors.primary }}>
+              <DynamicIcon name={coreConfig.headerIcon} className="h-8 w-8" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold font-display" style={{ color: visualConfig.colors.primary }}>
+                {coreConfig.companyName}
+              </h1>
+              <p className="text-sm" style={{ color: visualConfig.colors.secondary }}>{terminologyConfig.businessType}</p>
+            </div>
+          </div>
+          <div className='flex flex-col items-end'>
+            {seasonalConfig.seasonalMessage && (
+                <p className="text-xs text-right mb-1" style={{ color: visualConfig.colors.accent }}>
+                    {seasonalConfig.seasonalMessage}
+                </p>
+            )}
+            <div className="flex items-center gap-2">
+                <button
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                {theme === 'dark' ?
+                    <Icons.Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" /> :
+                    <Icons.Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                }
+                </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      {/* Chat Container */}
       <main className="flex-1 flex flex-col overflow-hidden p-4">
-        <div className="flex-1 bg-white dark:bg-gray-800/50 rounded-2xl shadow-professional flex flex-col overflow-hidden min-h-0 glass-effect">
-
-          {/* Chat Messages Area */}
+        <div className="flex-1 bg-white/50 dark:bg-gray-800/50 rounded-2xl shadow-professional flex flex-col overflow-hidden min-h-0 glass-effect"
+             style={{
+                borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.5rem' : '0.75rem'
+             }}
+        >
           <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.sender === 'ai' && <Avatar sender="ai" />}
-                <div
-                  className={`max-w-md lg:max-w-2xl px-5 py-3 rounded-2xl shadow-md message-bubble-animate ${
-                    message.sender === 'user'
-                      ? 'bg-enterprise-blue text-white'
-                      : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100'
-                  }`}
-                >
-                  <div
-                    className="text-base whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{ __html: formatMessageText(message.text) }}
-                  />
-                  <div className="flex items-center justify-end mt-2">
-                    <p className="text-xs opacity-60">
-                      {formatRelativeTime(message.timestamp)}
-                    </p>
-                    {message.sender === 'user' && message.status && (
-                      <div className="ml-2">
-                        {message.status === 'sending' && <Clock className="h-3 w-3 opacity-60" />}
-                        {message.status === 'sent' && <Check className="h-3 w-3 opacity-60" />}
-                        {message.status === 'delivered' && <CheckCheck className="h-3 w-3 opacity-60" />}
-                        {message.status === 'error' && <AlertCircle className="h-3 w-3 text-red-400" />}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {message.sender === 'user' && <Avatar sender="user" />}
-              </div>
+              <MessageBubble key={message.id} message={message} />
             ))}
 
-            {/* AI Thinking State */}
             {isLoading && (
               <div className="flex items-start gap-3 justify-start">
                 <Avatar sender="ai" />
                 <div className="bg-white dark:bg-gray-700 px-5 py-3 rounded-2xl shadow-md flex items-center gap-3">
                   <TypingIndicator />
+                  <p className="text-sm" style={{ color: visualConfig.colors.secondary }}>{terminologyConfig.statusMessages.thinking}</p>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input Area */}
           <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/30 dark:bg-gray-800/30 flex-shrink-0">
             <div className="flex items-center space-x-3 max-w-4xl mx-auto">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Describe the job details to generate a price..."
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-enterprise-blue-light focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-base resize-none"
+                placeholder={terminologyConfig.placeholderExamples}
+                className="flex-1 px-4 py-3 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-base resize-none"
+                style={{
+                    borderColor: visualConfig.colors.secondary,
+                    '--tw-ring-color': visualConfig.colors.accent,
+                    borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
+                }}
                 rows={1}
                 disabled={isLoading}
               />
               <button
+                ref={sendButtonRef}
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputText.trim()}
-                className="px-5 py-3 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 btn-gradient shadow-md"
+                className="px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md"
+                style={{
+                    backgroundColor: visualConfig.colors.primary,
+                    borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
+                }}
               >
-                <Send className="h-5 w-5" />
-                <span className="hidden sm:inline font-semibold">Send</span>
+                <DynamicIcon name="Send" className="h-5 w-5" />
+                <span className="hidden sm:inline font-semibold">{terminologyConfig.buttonTexts.send}</span>
               </button>
             </div>
           </div>
