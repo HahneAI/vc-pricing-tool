@@ -176,7 +176,7 @@ export const getSendEffectConfig = (): SendEffectConfig => {
       return {
         effect: 'leaf_flutter',
         colors: [primaryColor, '#32cd32', '#8fbc8f'],
-        duration: 800
+        duration: 1200
       };
     case 'hvac':
     case 'spark_burst':
