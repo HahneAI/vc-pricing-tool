@@ -297,19 +297,19 @@ const ChatInterface = () => {
 
           {/* Input Area */}
           <div
-            className="border-t p-4 transition-colors duration-300"
+            className="border-t p-3 transition-colors duration-300"
             style={{
               backgroundColor: visualConfig.colors.surface,
               borderTopColor: theme === 'light' ? '#e5e7eb' : '#374151'
             }}
           >
-            <div className="flex items-center space-x-3 max-w-4xl mx-auto">
+            <div className="flex items-center space-x-4 max-w-4xl mx-auto">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={terminologyConfig.placeholderExamples}
-                className="flex-1 px-4 py-3 rounded-xl resize-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                className="flex-1 px-3 py-2 rounded-xl resize-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: visualConfig.colors.background,
                   color: visualConfig.colors.text.primary,
