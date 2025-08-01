@@ -1,10 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, Loader2, Bot, Sun, Moon, User, Clock, Check, CheckCheck, AlertCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../context/ThemeContext';
 import { config } from '../utils/environment-config';
 import Avatar from './ui/Avatar';
 import TypingIndicator from './ui/TypingIndicator';
+import IndustryEffects from './ui/IndustryEffects';
+
+
+const DynamicIcon = ({ name, ...props }: { name: string } & Icons.LucideProps) => {
+  const IconComponent = Icons[name as keyof typeof Icons];
+
+  if (!IconComponent) {
+    return <Icons.MessageCircle {...props} />;
+  }
+
+  return <IconComponent {...props} />;
+};
 
 
 interface Message {
@@ -63,7 +75,6 @@ const formatMessageText = (text: string) => {
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
   
-  // Generate a unique session ID that persists for this chat session
   const sessionIdRef = useRef<string>(`quote_session_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastPollTimeRef = useRef<Date>(new Date());
@@ -71,7 +82,7 @@ const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: config.welcomeMessage,
+      text: config.welcomeVariants[Math.floor(Math.random() * config.welcomeVariants.length)] || config.welcomeMessage,
       sender: 'ai',
       timestamp: new Date(),
       sessionId: sessionIdRef.current
@@ -80,11 +91,9 @@ const ChatInterface = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // AI Agent webhook URL
   const MAKE_WEBHOOK_URL = config.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
-  // Send user message to Make.com AI Agent
   const sendUserMessageToMake = async (userMessageText: string) => {
     if (!MAKE_WEBHOOK_URL) {
       console.warn("Make.com webhook URL is not configured. Skipping message sending.");
@@ -93,22 +102,16 @@ const ChatInterface = () => {
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: userMessageText,                           // ✅ Original AI agent format
-          timestamp: new Date().toISOString(),                // ✅ Original AI agent format
-          sessionId: sessionIdRef.current,                    // ✅ Original AI agent format
-          source: 'quote_engine',                            // ✅ Original AI agent format
-          techId: '22222222-2222-2222-2222-222222222222'     // ✅ Original AI agent format
+          message: userMessageText,
+          timestamp: new Date().toISOString(),
+          sessionId: sessionIdRef.current,
+          source: 'quote_engine',
+          techId: '22222222-2222-2222-2222-222222222222'
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message to Make.com');
-      }
-      
+      if (!response.ok) throw new Error('Failed to send message to Make.com');
       console.log('✅ User message sent to AI agent successfully');
     } catch (error) {
       console.error('❌ Error sending user message to AI agent:', error);
@@ -116,53 +119,37 @@ const ChatInterface = () => {
     }
   };
 
-  // Poll for new AI messages with duplicate prevention
-  const pollForAiMessages = async () => {
-    console.log('🔍 POLLING - Session:', sessionIdRef.current);
-    console.log('🔍 POLLING - URL:', NETLIFY_API_URL);
-    
+  const pollForAiMessages = React.useCallback(async () => {
     try {
       const response = await fetch(`${NETLIFY_API_URL}?since=${lastPollTimeRef.current.toISOString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch AI messages');
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch AI messages');
       const newAiMessages = await response.json();
-      console.log('🔍 RECEIVED DATA:', newAiMessages);
       
       if (newAiMessages.length > 0) {
-        console.log('✅ ADDING MESSAGES TO CHAT:', newAiMessages.length);
-        
         const processedMessages = newAiMessages.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
-
         setMessages(prev => [...prev, ...processedMessages]);
         setIsLoading(false);
         lastPollTimeRef.current = new Date();
       }
-    } catch (error) {
-      console.error('Error polling for AI messages:', error);
+    } catch (e) {
+      console.error('Error polling for AI messages:', e);
     }
-  };
+  }, [NETLIFY_API_URL]);
 
-  // Set up polling interval
   useEffect(() => {
-    const pollingInterval = setInterval(pollForAiMessages, 3000); // Poll every 3 seconds
-    
+    const pollingInterval = setInterval(pollForAiMessages, 3000);
     return () => clearInterval(pollingInterval);
-  }, []); // Empty dependency array - we want this to run once
+  }, [pollForAiMessages]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
-
     const userMessageText = inputText;
     const messageId = uuidv4();
     const userMessage: Message = {
@@ -173,15 +160,13 @@ const ChatInterface = () => {
       sessionId: sessionIdRef.current,
       status: 'sending',
     };
-
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
-
     try {
       await sendUserMessageToMake(userMessageText);
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'sent' } : m));
-    } catch (error) {
+    } catch {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'error', text: `${m.text}\n\n[Error: Could not send message]` } : m));
       setIsLoading(false);
     }
@@ -195,42 +180,38 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-enterprise-gray-light dark:bg-gray-900 font-sans">
-      {/* Header */}
-      <header className="w-full p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-  <div className="flex items-center justify-between max-w-6xl mx-auto">
-    <div className="flex items-center gap-3">
-      <div className="bg-primary-600 text-white p-3 rounded-lg shadow-md">
-  <MessageCircle className="h-8 w-8" />
-</div>
-      <div>
-        <h1 className="text-xl font-bold font-display text-gray-800 dark:text-white">
-          {config.companyName}
-        </h1>
-        <p className="text-sm text-enterprise-gray dark:text-gray-400">AI Pricing Assistant</p>
-      </div>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <button
-        className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ?
-          <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" /> :
-          <Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-        }
-      </button>
-    </div>
-  </div>
-</header>
+    <div className="h-screen flex flex-col font-sans" style={{ backgroundColor: 'var(--landscape-neutral)'}}>
+      <IndustryEffects />
+      <header className="w-full p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--landscape-secondary)'}}>
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="text-white p-3 rounded-lg shadow-md" style={{ backgroundColor: 'var(--landscape-primary)' }}>
+              <DynamicIcon name={config.headerIcon} className="h-8 w-8" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold font-display" style={{ color: 'var(--landscape-primary)' }}>
+                {config.companyName}
+              </h1>
+              <p className="text-sm" style={{ color: 'var(--landscape-secondary)'}}>{config.serviceTerminology}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ?
+                <Icons.Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" /> :
+                <Icons.Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              }
+            </button>
+          </div>
+        </div>
+      </header>
 
-      {/* Chat Container */}
       <main className="flex-1 flex flex-col overflow-hidden p-4">
-        <div className="flex-1 bg-white dark:bg-gray-800/50 rounded-2xl shadow-professional flex flex-col overflow-hidden min-h-0 glass-effect">
-
-          {/* Chat Messages Area */}
+        <div className="flex-1 bg-white/50 dark:bg-gray-800/50 rounded-2xl shadow-professional flex flex-col overflow-hidden min-h-0 glass-effect">
           <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
             {messages.map((message) => (
               <div
@@ -241,9 +222,12 @@ const ChatInterface = () => {
                 <div
                   className={`max-w-md lg:max-w-2xl px-5 py-3 rounded-2xl shadow-md message-bubble-animate ${
                     message.sender === 'user'
-                      ? 'bg-enterprise-blue text-white'
+                      ? 'text-white'
                       : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100'
                   }`}
+                  style={{
+                    backgroundColor: message.sender === 'user' ? 'var(--landscape-primary)' : 'white'
+                  }}
                 >
                   <div
                     className="text-base whitespace-pre-wrap"
@@ -255,10 +239,10 @@ const ChatInterface = () => {
                     </p>
                     {message.sender === 'user' && message.status && (
                       <div className="ml-2">
-                        {message.status === 'sending' && <Clock className="h-3 w-3 opacity-60" />}
-                        {message.status === 'sent' && <Check className="h-3 w-3 opacity-60" />}
-                        {message.status === 'delivered' && <CheckCheck className="h-3 w-3 opacity-60" />}
-                        {message.status === 'error' && <AlertCircle className="h-3 w-3 text-red-400" />}
+                        {message.status === 'sending' && <Icons.Clock className="h-3 w-3 opacity-60" />}
+                        {message.status === 'sent' && <Icons.Check className="h-3 w-3 opacity-60" />}
+                        {message.status === 'delivered' && <Icons.CheckCheck className="h-3 w-3 opacity-60" />}
+                        {message.status === 'error' && <Icons.AlertCircle className="h-3 w-3 text-red-400" />}
                       </div>
                     )}
                   </div>
@@ -267,37 +251,43 @@ const ChatInterface = () => {
               </div>
             ))}
 
-            {/* AI Thinking State */}
             {isLoading && (
               <div className="flex items-start gap-3 justify-start">
                 <Avatar sender="ai" />
                 <div className="bg-white dark:bg-gray-700 px-5 py-3 rounded-2xl shadow-md flex items-center gap-3">
                   <TypingIndicator />
+                  <p className="text-sm" style={{ color: 'var(--landscape-secondary)'}}>{config.statusMessages.thinking}</p>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input Area */}
           <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/30 dark:bg-gray-800/30 flex-shrink-0">
             <div className="flex items-center space-x-3 max-w-4xl mx-auto">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Describe the job details to generate a price..."
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-enterprise-blue-light focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-base resize-none"
+                placeholder={config.placeholderExamples}
+                className="flex-1 px-4 py-3 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-base resize-none"
+                style={{
+                    borderColor: 'var(--landscape-secondary)',
+                    '--tw-ring-color': 'var(--landscape-accent)'
+                }}
                 rows={1}
                 disabled={isLoading}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputText.trim()}
-                className="px-5 py-3 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 btn-gradient shadow-md"
+                className="px-5 py-3 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md"
+                style={{
+                    backgroundColor: 'var(--landscape-primary)',
+                }}
               >
-                <Send className="h-5 w-5" />
-                <span className="hidden sm:inline font-semibold">Send</span>
+                <DynamicIcon name={config.sendIcon} className="h-5 w-5" />
+                <span className="hidden sm:inline font-semibold">{config.buttonTexts.send}</span>
               </button>
             </div>
           </div>
