@@ -39,30 +39,34 @@ interface TerminologyConfig {
   urgencyLevel: 'routine' | 'seasonal' | 'emergency';
 }
 
-interface VisualThemeConfig {
+import { createSmartColorSystem } from './color-system';
+type Theme = 'light' | 'dark';
+
+export interface SmartVisualThemeConfig {
   colors: {
     primary: string;
     secondary: string;
     accent: string;
     success: string;
-    neutral: string;
     background: string;
     surface: string;
+    elevated: string;
+    text: {
+      primary: string;
+      secondary: string;
+      onPrimary: string;
+      onSecondary: string;
+    };
   };
   patterns: {
     backgroundTexture: string;
     borderStyle: string;
-    componentShape: 'organic' | 'geometric' | 'technical';
+    componentShape: 'organic' | 'geometric';
   };
   animations: {
-    messageEntry: 'slide' | 'grow' | 'fade' | 'float';
-    loadingStyle: 'pulse' | 'spin' | 'grow' | 'wave';
-    hoverEffect: 'lift' | 'glow' | 'ripple' | 'scale';
-  };
-  typography: {
-    headingFont: string;
-    bodyFont: string;
-    tone: 'professional' | 'friendly' | 'premium' | 'technical';
+    messageEntry: 'slide' | 'grow';
+    loadingStyle: 'pulse' | 'grow';
+    hoverEffect: 'lift' | 'glow';
   };
 }
 
@@ -260,69 +264,85 @@ export const getTerminologyConfig = (): TerminologyConfig => {
   }
 };
 
-export const getVisualThemeConfig = (): VisualThemeConfig => {
+export const getSmartVisualThemeConfig = (theme: Theme): SmartVisualThemeConfig => {
   const industryType = import.meta.env.VITE_INDUSTRY_TYPE;
   const primaryColor = import.meta.env.VITE_PRIMARY_COLOR;
   const secondaryColor = import.meta.env.VITE_SECONDARY_COLOR;
+  const accentColor = import.meta.env.VITE_ACCENT_COLOR;
   const messageStyle = import.meta.env.VITE_MESSAGE_STYLE;
 
-  switch (industryType) {
-    case 'landscaping':
-      return {
-        colors: {
-          primary: primaryColor || '#2e8b57',
-          secondary: secondaryColor || '#8b4513',
-          accent: import.meta.env.VITE_ACCENT_COLOR ||'#f4a460',
-          success: import.meta.env.VITE_SUCCESS_COLOR || '#32cd32',
-          neutral: '#696969',
-          background: '#f8fafc',
-          surface: '#ffffff'
-        },
-        patterns: {
-          backgroundTexture: 'subtle-organic',
-          borderStyle: 'natural-curves',
-          componentShape: messageStyle === 'organic' ? 'organic' : 'geometric'
-        },
-        animations: {
-          messageEntry: 'grow',
-          loadingStyle: 'grow',
-          hoverEffect: 'lift'
-        },
-        typography: {
-          headingFont: 'Poppins',
-          bodyFont: 'Inter',
-          tone: 'professional'
-        }
-      };
+  // Define default colors based on industry
+  const industryDefaults = {
+    landscaping: {
+      primary: '#2e8b57',
+      secondary: '#8b4513',
+      accent: '#f4a460',
+    },
+    tech: {
+      primary: '#2563eb',
+      secondary: '#1d4ed8',
+      accent: '#3b82f6',
+    },
+  };
 
-    default:
-      return {
-        colors: {
-          primary: '#2563eb',
-          secondary: '#1d4ed8',
-          accent: '#3b82f6',
-          success: '#10b981',
-          neutral: '#6b7280',
-          background: '#f8fafc',
-          surface: '#ffffff'
-        },
-        patterns: {
-          backgroundTexture: 'subtle-tech',
-          borderStyle: 'clean-lines',
-          componentShape: 'geometric'
-        },
-        animations: {
-          messageEntry: 'slide',
-          loadingStyle: 'pulse',
-          hoverEffect: 'glow'
-        },
-        typography: {
-          headingFont: 'Poppins',
-          bodyFont: 'Inter',
-          tone: 'professional'
-        }
-      };
-  }
+  const defaults = industryType === 'landscaping' ? industryDefaults.landscaping : industryDefaults.tech;
+
+  // Create the smart color system
+  const colorSystem = createSmartColorSystem(
+    primaryColor || defaults.primary,
+    secondaryColor || defaults.secondary,
+    accentColor || defaults.accent
+  );
+
+  // Define industry-specific patterns and animations
+  const industryPatterns = {
+    landscaping: {
+      backgroundTexture: 'subtle-organic',
+      borderStyle: 'soft-borders',
+      componentShape: messageStyle === 'organic' ? 'organic' : 'geometric',
+      messageEntry: 'grow',
+      loadingStyle: 'grow',
+      hoverEffect: 'lift',
+    },
+    tech: {
+      backgroundTexture: 'subtle-tech',
+      borderStyle: 'subtle-borders',
+      componentShape: 'geometric',
+      messageEntry: 'slide',
+      loadingStyle: 'pulse',
+      hoverEffect: 'glow',
+    },
+  };
+
+  const patterns = industryType === 'landscaping' ? industryPatterns.landscaping : industryPatterns.tech;
+
+  return {
+    colors: {
+      primary: colorSystem.primary[theme],
+      secondary: colorSystem.secondary[theme],
+      accent: colorSystem.accent[theme],
+      success: colorSystem.success[theme],
+      background: colorSystem.surfaces[theme].background,
+      surface: colorSystem.surfaces[theme].surface,
+      elevated: colorSystem.surfaces[theme].elevated,
+      text: {
+        primary: colorSystem.text[theme].primary,
+        secondary: colorSystem.text[theme].secondary,
+        onPrimary: colorSystem.contrast[theme].onPrimary,
+        onSecondary: colorSystem.contrast[theme].onSecondary,
+      },
+    },
+    patterns: {
+      backgroundTexture: patterns.backgroundTexture,
+      borderStyle: patterns.borderStyle,
+      componentShape: patterns.componentShape as 'organic' | 'geometric',
+    },
+    animations: {
+      messageEntry: patterns.messageEntry as 'grow' | 'slide',
+      loadingStyle: patterns.loadingStyle as 'grow' | 'pulse',
+      hoverEffect: patterns.hoverEffect as 'lift' | 'glow',
+    },
+  };
 };
 
 export const getSeasonalConfig = (): SeasonalConfig => {
