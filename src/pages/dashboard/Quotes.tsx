@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, Loader2, Bot } from 'lucide-react';
+import { Send, MessageCircle, Loader2, Bot, RotateCcw } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
@@ -117,6 +117,29 @@ const Quotes = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleRefreshChat = () => {
+    // Generate new session ID
+    sessionIdRef.current = `quote_session_${Date.now()}`;
+
+    // Reset messages to initial welcome message
+    setMessages([{
+      id: '1',
+      text: process.env.VITE_WELCOME_MESSAGE || "Let's make some profit. What are we doing today?",
+      sender: 'ai',
+      timestamp: new Date(),
+      sessionId: sessionIdRef.current
+    }]);
+
+    // Clear any loading states
+    setIsLoading(false);
+    setInputText('');
+
+    // Reset polling timestamp
+    lastPollTimeRef.current = new Date();
+
+    console.log('🔄 Chat refreshed with new session:', sessionIdRef.current);
+  };
+
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
@@ -162,11 +185,23 @@ const Quotes = () => {
       {/* Container that prevents page scrolling and keeps chat in viewport */}
       <div className="h-[calc(100vh-12rem)] flex flex-col">
         {/* Header section - fixed height */}
-        <div className="flex items-center gap-3 mb-4 flex-shrink-0">
-          <MessageCircle className="h-8 w-8 text-primary-600" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            AI Quote Engine
-          </h2>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <MessageCircle className="h-8 w-8 text-primary-600" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              AI Quote Engine
+            </h1>
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefreshChat}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 bg-primary-600 hover:bg-primary-700 text-white hover:shadow-lg border-2 border-transparent hover:border-opacity-30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            title="Start a new chat session"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span className="hidden sm:inline">New Chat</span>
+          </button>
         </div>
 
         {/* Chat container - takes remaining space */}
