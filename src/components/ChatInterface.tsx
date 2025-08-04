@@ -33,6 +33,7 @@ const ChatInterface = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastPollTimeRef = useRef<Date>(new Date());
   const sendButtonRef = useRef<HTMLButtonElement>(null);
+  const refreshButtonRef = useRef<HTMLButtonElement>(null);
 
   const welcomeMessage = import.meta.env.VITE_WELCOME_MESSAGE || `Welcome to ${coreConfig.companyName}! How can I help you today?`;
 
@@ -140,6 +141,9 @@ const ChatInterface = () => {
   };
 
   const handleRefreshChat = () => {
+    // Trigger the leaf flutter animation (matches send button)
+    triggerSendEffect(refreshButtonRef.current);
+
     // Generate new session ID
     sessionIdRef.current = `quote_session_${Date.now()}`;
 
@@ -167,71 +171,74 @@ const ChatInterface = () => {
       className="h-screen flex flex-col font-sans transition-colors duration-300"
       style={{ backgroundColor: visualConfig.colors.background }}
     >
-      <header className="flex-shrink-0 p-4">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          {/* Logo and Title */}
-          <div className="flex items-center space-x-4">
-            <div
-              className="flex items-center justify-center p-3 rounded-2xl shadow-md"
-              style={{ backgroundColor: visualConfig.colors.primary }}
-            >
-              <DynamicIcon
-                name={coreConfig.headerIcon}
-                className="h-8 w-8"
-                style={{ color: visualConfig.colors.text.onPrimary }}
-              />
-            </div>
-            <div>
-              <h1
-                className="text-2xl font-bold"
-                style={{ color: visualConfig.colors.text.primary }}
-              >
-                {coreConfig.companyName}
-              </h1>
-              <p
-                className="text-sm"
-                style={{ color: visualConfig.colors.text.secondary }}
-              >
-                {terminologyConfig.businessType}
-              </p>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center space-x-3">
-            {/* Refresh Button */}
-            <button
-              onClick={handleRefreshChat}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
-              style={{
-                backgroundColor: visualConfig.colors.primary,
-                color: visualConfig.colors.text.onPrimary,
-                '--tw-ring-color': visualConfig.colors.primary,
-              }}
-              title="Start a new chat session"
-            >
-              <DynamicIcon name="RotateCcw" className="h-4 w-4" />
-              <span className="hidden sm:inline font-medium">New Chat</span>
-            </button>
-
-            {/* Theme Toggle (existing) */}
-            <button
-              onClick={toggleTheme}
-              className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
-              style={{
-                backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-                color: visualConfig.colors.text.secondary
-              }}
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ?
-                <Icons.Sun className="h-6 w-6" /> :
-                <Icons.Moon className="h-6 w-6" />
-              }
-            </button>
-          </div>
+<header className="flex-shrink-0 p-4">
+  <div className="max-w-4xl mx-auto">
+    <div className="flex items-center justify-start">
+      {/* Logo and Title - Clean Left Alignment */}
+      <div className="flex items-center space-x-4">
+        <div
+          className="flex items-center justify-center p-3 rounded-2xl shadow-md"
+          style={{ backgroundColor: visualConfig.colors.primary }}
+        >
+          <DynamicIcon
+            name={coreConfig.headerIcon}
+            className="h-8 w-8"
+            style={{ color: visualConfig.colors.text.onPrimary }}
+          />
         </div>
-      </header>
+        <div>
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: visualConfig.colors.text.primary }}
+          >
+            {coreConfig.companyName}
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: visualConfig.colors.text.secondary }}
+          >
+            {terminologyConfig.businessType}
+          </p>
+        </div>
+      </div>
+
+      {/* Controls - Clean Right Alignment */}
+      <div className="flex items-center space-x-3 ml-auto">
+        {/* Refresh Button */}
+        <button
+          ref={refreshButtonRef}
+          onClick={handleRefreshChat}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+          style={{
+            backgroundColor: visualConfig.colors.primary,
+            color: visualConfig.colors.text.onPrimary,
+            '--tw-ring-color': visualConfig.colors.primary,
+          }}
+          title="Start a new chat session"
+        >
+          <DynamicIcon name="RotateCcw" className="h-4 w-4" />
+          <span className="hidden sm:inline font-medium">New Chat</span>
+        </button>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+          style={{
+            backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
+            color: visualConfig.colors.text.secondary
+          }}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ?
+            <Icons.Sun className="h-6 w-6" /> :
+            <Icons.Moon className="h-6 w-6" />
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
 
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col overflow-hidden p-4">
