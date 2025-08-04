@@ -6,8 +6,6 @@ import {
     getCoreConfig,
     getTerminologyConfig,
     getSmartVisualThemeConfig,
-    getSeasonalConfig,
-    SmartVisualThemeConfig
 } from '../config/industry';
 import { triggerSendEffect } from './ui/IndustryEffects';
 import TypingIndicator from './ui/TypingIndicator';
@@ -17,7 +15,6 @@ import { Message } from '../types/job';
 
 const coreConfig = getCoreConfig();
 const terminologyConfig = getTerminologyConfig();
-const seasonalConfig = getSeasonalConfig();
 
 const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.LucideProps) => {
   const IconComponent = Icons[name];
@@ -27,58 +24,6 @@ const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.Lu
   return <IconComponent {...props} />;
 };
 
-const formatRelativeTime = (date: Date) => {
-  const now = new Date();
-  const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
-  const minutes = Math.round(seconds / 60);
-
-  if (seconds < 5) return "just now";
-  if (minutes < 1) return `${seconds} seconds ago`;
-  if (minutes < 60) return `${minutes} minutes ago`;
-
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-const formatMessageText = (text: string) => {
-  let html = text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-  const lines = html.split('\n');
-  let inList = false;
-  html = lines.map(line => {
-    if (line.startsWith('- ')) {
-      const listItem = `<li>${line.substring(2)}</li>`;
-      if (!inList) {
-        inList = true;
-        return `<ul>${listItem}`;
-      }
-      return listItem;
-    } else {
-      if (inList) {
-        inList = false;
-        return `</ul>${line}`;
-      }
-      return line;
-    }
-  }).join('<br />');
-
-  if (inList) {
-    html += '</ul>';
-  }
-
-  return html.replace(/<br \/>/g, '\n').replace(/\n/g, '<br />');
-};
-
-const StatusIcon = ({ status }: { status: Message['status'] }) => {
-    switch (status) {
-        case 'sending': return <Icons.Clock className="h-3 w-3 opacity-60" />;
-        case 'sent': return <Icons.Check className="h-3 w-3 opacity-60" />;
-        case 'delivered': return <Icons.CheckCheck className="h-3 w-3 opacity-60" />;
-        case 'error': return <Icons.AlertCircle className="h-3 w-3 text-red-400" />;
-        default: return null;
-    }
-};
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
@@ -194,41 +139,57 @@ const ChatInterface = () => {
     }
   };
 
-  const backgroundClass = visualConfig.patterns.backgroundTexture === 'subtle-organic' ? 'background-organic' : 'background-tech';
+  const handleRefreshChat = () => {
+    // Generate new session ID
+    sessionIdRef.current = `quote_session_${Date.now()}`;
+
+    // Reset messages to initial welcome message
+    setMessages([{
+      id: '1',
+      text: welcomeMessage,
+      sender: 'ai',
+      timestamp: new Date(),
+      sessionId: sessionIdRef.current
+    }]);
+
+    // Clear any loading states
+    setIsLoading(false);
+    setInputText('');
+
+    // Reset polling timestamp
+    lastPollTimeRef.current = new Date();
+
+    console.log('🔄 Chat refreshed with new session:', sessionIdRef.current);
+  };
 
   return (
     <div
       className="h-screen flex flex-col font-sans transition-colors duration-300"
       style={{ backgroundColor: visualConfig.colors.background }}
     >
-      {/* Header with proper theme adaptation */}
-      <header
-        className="w-full p-4 border-b flex-shrink-0 transition-colors duration-300"
-        style={{
-          backgroundColor: visualConfig.colors.surface,
-          borderBottomColor: theme === 'light' ? '#e5e7eb' : '#374151'
-        }}
-      >
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-3">
+      <header className="flex-shrink-0 p-4">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          {/* Logo and Title */}
+          <div className="flex items-center space-x-4">
             <div
-              className="text-white p-3 rounded-lg shadow-md transition-all duration-300"
-              style={{
-                backgroundColor: visualConfig.colors.primary,
-                color: visualConfig.colors.text.onPrimary
-              }}
+              className="flex items-center justify-center p-3 rounded-2xl shadow-md"
+              style={{ backgroundColor: visualConfig.colors.primary }}
             >
-              <DynamicIcon name={coreConfig.headerIcon} className="h-8 w-8" />
+              <DynamicIcon
+                name={coreConfig.headerIcon}
+                className="h-8 w-8"
+                style={{ color: visualConfig.colors.text.onPrimary }}
+              />
             </div>
             <div>
               <h1
-                className="text-xl font-bold transition-colors duration-300"
+                className="text-2xl font-bold"
                 style={{ color: visualConfig.colors.text.primary }}
               >
                 {coreConfig.companyName}
               </h1>
               <p
-                className="text-sm transition-colors duration-300"
+                className="text-sm"
                 style={{ color: visualConfig.colors.text.secondary }}
               >
                 {terminologyConfig.businessType}
@@ -236,21 +197,39 @@ const ChatInterface = () => {
             </div>
           </div>
 
-          {/* Enhanced Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-3 rounded-full transition-all duration-300 hover:scale-105"
-            style={{
-              backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-              color: visualConfig.colors.text.secondary
-            }}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ?
-              <Icons.Sun className="h-6 w-6" /> :
-              <Icons.Moon className="h-6 w-6" />
-            }
-          </button>
+          {/* Controls */}
+          <div className="flex items-center space-x-3">
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefreshChat}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+              style={{
+                backgroundColor: visualConfig.colors.primary,
+                color: visualConfig.colors.text.onPrimary,
+                '--tw-ring-color': visualConfig.colors.primary,
+              }}
+              title="Start a new chat session"
+            >
+              <DynamicIcon name="RotateCcw" className="h-4 w-4" />
+              <span className="hidden sm:inline font-medium">New Chat</span>
+            </button>
+
+            {/* Theme Toggle (existing) */}
+            <button
+              onClick={toggleTheme}
+              className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+              style={{
+                backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
+                color: visualConfig.colors.text.secondary
+              }}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ?
+                <Icons.Sun className="h-6 w-6" /> :
+                <Icons.Moon className="h-6 w-6" />
+              }
+            </button>
+          </div>
         </div>
       </header>
 
