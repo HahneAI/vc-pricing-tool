@@ -48,6 +48,7 @@ const ChatInterface = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const MAKE_WEBHOOK_URL = coreConfig.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
@@ -140,14 +141,19 @@ const ChatInterface = () => {
     }
   };
 
-  const handleRefreshChat = () => {
-    // Trigger the leaf flutter animation (matches send button)
+  const handleRefreshChat = async () => {
+    // Trigger leaf flutter animation on button (existing functionality)
     triggerSendEffect(refreshButtonRef.current);
 
-    // Generate new session ID
+    // Phase 1: Start refresh animation state
+    setIsRefreshing(true);
+
+    // Phase 2: Wait for fade-up-out animation to complete
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Phase 3: Clear messages and generate new session
     sessionIdRef.current = `quote_session_${Date.now()}`;
 
-    // Reset messages to initial welcome message
     setMessages([{
       id: '1',
       text: welcomeMessage,
@@ -156,12 +162,14 @@ const ChatInterface = () => {
       sessionId: sessionIdRef.current
     }]);
 
-    // Clear any loading states
+    // Clear loading states
     setIsLoading(false);
     setInputText('');
-
-    // Reset polling timestamp
     lastPollTimeRef.current = new Date();
+
+    // Phase 4: Brief pause then end refresh state (allows fade-in)
+    await new Promise(resolve => setTimeout(resolve, 100));
+    setIsRefreshing(false);
 
     console.log('🔄 Chat refreshed with new session:', sessionIdRef.current);
   };
@@ -251,13 +259,20 @@ const ChatInterface = () => {
         >
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {messages.map((message) => (
-              <ThemeAwareMessageBubble
+            {messages.map((message, index) => (
+              <div
                 key={message.id}
-                message={message}
-                visualConfig={visualConfig}
-                theme={theme}
-              />
+                className={`
+                  ${isRefreshing ? 'animate-fade-up-out' : ''}
+                  ${!isRefreshing && index === messages.length - 1 ? 'animate-fade-up-in-delay' : ''}
+                `}
+              >
+                <ThemeAwareMessageBubble
+                  message={message}
+                  visualConfig={visualConfig}
+                  theme={theme}
+                />
+              </div>
             ))}
 
             {/* Typing Indicator */}

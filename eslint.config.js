@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'node_modules'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -23,6 +23,28 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+
+      // JULES-FRIENDLY LINTING RULES
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true
+      }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-empty-function': 'off',
+      'no-console': ['warn', { allow: ['warn', 'error', 'log'] }],
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // STYLE CONSISTENCY
+      'quotes': ['warn', 'single', { avoidEscape: true }],
+      'semi': ['warn', 'always'],
+      'comma-dangle': ['warn', 'only-multiline'],
+
+      // HELPFUL WARNINGS (not errors)
+      'no-debugger': 'warn',
+      'no-alert': 'warn',
+      'prefer-const': 'warn',
+      'no-case-declarations': 'warn',
     },
   }
 );
