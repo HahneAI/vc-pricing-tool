@@ -180,8 +180,8 @@ const ChatInterface = () => {
       style={{ backgroundColor: visualConfig.colors.background }}
     >
 <header className="flex-shrink-0 p-4">
-  <div className="max-w-4xl mx-auto">
-    <div className="flex items-center justify-start">
+  <div className="w-full">  {/* Changed from max-w-4xl mx-auto */}
+    <div className="flex items-center justify-between">  {/* Changed from justify-start */}
       {/* Logo and Title - Clean Left Alignment */}
       <div className="flex items-center space-x-4">
         <div
@@ -211,7 +211,7 @@ const ChatInterface = () => {
       </div>
 
       {/* Controls - Clean Right Alignment */}
-      <div className="flex items-center space-x-3 ml-auto">
+      <div className="flex items-center space-x-3">  {/* Removed ml-auto */}
         {/* Refresh Button */}
         <button
           ref={refreshButtonRef}
