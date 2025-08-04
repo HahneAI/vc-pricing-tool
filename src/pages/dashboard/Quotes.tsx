@@ -196,20 +196,7 @@ const Quotes = () => {
           {/* Refresh Button */}
           <button
             onClick={handleRefreshChat}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
-              ${process.env.VITE_PRIMARY_COLOR
-                ? 'hover:shadow-lg'
-                : 'bg-primary-600 hover:bg-primary-700 text-white hover:shadow-lg'
-              }
-              border-2 border-transparent hover:border-opacity-30
-              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500
-            `}
-            style={{
-              backgroundColor: process.env.VITE_PRIMARY_COLOR || undefined,
-              borderColor: process.env.VITE_PRIMARY_COLOR ? `${process.env.VITE_PRIMARY_COLOR}30` : undefined,
-              color: process.env.VITE_PRIMARY_COLOR ? 'white' : undefined
-            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 bg-primary-600 hover:bg-primary-700 text-white hover:shadow-lg border-2 border-transparent hover:border-opacity-30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             title="Start a new chat session"
           >
             <RotateCcw className="h-4 w-4" />
