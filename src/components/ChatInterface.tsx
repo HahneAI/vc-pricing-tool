@@ -272,13 +272,14 @@ const ChatInterface = () => {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {messages.map((message, index) => (
-              <div
-                key={message.id}
-                className={`
-                  ${isRefreshing ? 'animate-fade-up-out' : ''}
-                  ${!isRefreshing && index === messages.length - 1 ? 'animate-fade-up-in-delay' : ''}
-                `}
-              >
+  <div
+    key={message.id}
+    className={`
+      ${isRefreshing ? 'animate-fade-up-out' : ''}
+      ${!isRefreshing && index === messages.length - 1 && message.sender === 'user' ? 'animate-fade-up-in-delay-user' : ''}
+      ${!isRefreshing && index === messages.length - 1 && message.sender === 'ai' ? 'animate-fade-up-in-delay' : ''}
+    `}
+  >
                 <ThemeAwareMessageBubble
                   message={message}
                   visualConfig={visualConfig}
