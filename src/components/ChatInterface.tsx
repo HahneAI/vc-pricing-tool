@@ -185,14 +185,18 @@ const ChatInterface = () => {
       {/* Logo and Title - Clean Left Alignment */}
       <div className="flex items-center space-x-4">
         <div
-          className="flex items-center justify-center p-3 rounded-2xl shadow-md"
+          className="flex items-center justify-center p-2 rounded-2xl shadow-md"
           style={{ backgroundColor: visualConfig.colors.primary }}
         >
-          <DynamicIcon
-            name={coreConfig.headerIcon}
-            className="h-8 w-8"
-            style={{ color: visualConfig.colors.text.onPrimary }}
-          />
+          {coreConfig.logoUrl ? (
+            <img src={coreConfig.logoUrl} alt={`${coreConfig.companyName} Logo`} className='h-10 w-auto' />
+          ) : (
+            <DynamicIcon
+              name={coreConfig.headerIcon}
+              className="h-8 w-8"
+              style={{ color: visualConfig.colors.text.onPrimary }}
+            />
+          )}
         </div>
         <div>
           <h1

@@ -1,9 +1,10 @@
 import React from 'react';
 import * as Icons from 'lucide-react';
-import { getLoadingConfig } from '../../config/industry';
+import { getLoadingConfig, getCoreConfig } from '../../config/industry';
 
 const LoadingScreen = () => {
   const config = getLoadingConfig();
+  const coreConfig = getCoreConfig();
 
   const IconComponent = Icons[config.icon] || Icons.MessageCircle;
 
@@ -13,23 +14,29 @@ const LoadingScreen = () => {
         <div className="relative">
           {/* Animated logo with industry-specific effects */}
           <div
-            className="w-20 h-20 text-white rounded-2xl flex items-center justify-center shadow-2xl"
+            className="w-24 h-24 text-white rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden"
             style={{ backgroundColor: config.colors.primary }}
           >
-            {config.type === 'growth' && (
-              <div className="growth-animation">
-                <IconComponent size={40} className="animate-grow" />
-              </div>
-            )}
-            {config.type === 'building' && (
-              <div className="building-animation">
-                <IconComponent size={40} className="animate-build" />
-              </div>
-            )}
-            {config.type === 'generic' && (
-              <div className="pulse-animation">
-                <IconComponent size={40} className="animate-pulse-gentle" />
-              </div>
+            {coreConfig.logoUrl ? (
+              <img src={coreConfig.logoUrl} alt={`${coreConfig.companyName} Logo`} className="w-full h-full object-contain" />
+            ) : (
+              <>
+                {config.type === 'growth' && (
+                  <div className="growth-animation">
+                    <IconComponent size={40} className="animate-grow" />
+                  </div>
+                )}
+                {config.type === 'building' && (
+                  <div className="building-animation">
+                    <IconComponent size={40} className="animate-build" />
+                  </div>
+                )}
+                {config.type === 'generic' && (
+                  <div className="pulse-animation">
+                    <IconComponent size={40} className="animate-pulse-gentle" />
+                  </div>
+                )}
+              </>
             )}
           </div>
 

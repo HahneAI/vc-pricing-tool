@@ -110,17 +110,18 @@ const getSeasonalColors = (season: Season, industry: string): string[] => {
   return [];
 }
 
-const getSeasonalMessage = (season: Season, industry: string, region: string): string => {
+const getSeasonalMessage = (season: Season, industry: string, region: string, climateZone?: string): string => {
   if (industry === 'landscaping') {
+    const locationInfo = climateZone ? `${region} (Zone ${climateZone})` : region;
     switch (season) {
       case 'spring':
-        return `It's a great time for planting and landscape refreshing in the ${region} area!`;
+        return `It's a great time for planting and landscape refreshing in the ${locationInfo} area!`;
       case 'summer':
         return 'Ideal time for hardscaping and outdoor living projects.';
       case 'fall':
         return 'Ask about our fall cleanup and winter preparation services.';
       case 'winter':
-        return `Perfect for planning next season's landscape transformation in ${region}.`;
+        return `Perfect for planning next season's landscape transformation in ${locationInfo}.`;
       default:
         return '';
     }
@@ -198,70 +199,79 @@ export const getTerminologyConfig = (): TerminologyConfig => {
   const industryType = import.meta.env.VITE_INDUSTRY_TYPE;
   const companyName = import.meta.env.VITE_COMPANY_NAME || 'TradeSphere';
 
+  // Define base configuration from environment variables with sensible defaults
+  const baseConfig = {
+    businessType: import.meta.env.VITE_BUSINESS_TYPE || 'business consultant',
+    serviceTerms: (import.meta.env.VITE_PRIMARY_SERVICES || 'consulting,strategy,analysis').split(','),
+    projectLanguage: import.meta.env.VITE_PROJECT_LANGUAGE || 'project',
+    estimateLanguage: import.meta.env.VITE_ESTIMATE_LANGUAGE || 'estimate',
+    completionTerms: 'project completion',
+    placeholderExamples: import.meta.env.VITE_PLACEHOLDER_EXAMPLES || 'e.g., "I need help with my business strategy."',
+    urgencyLevel: (import.meta.env.VITE_URGENCY_LEVEL as TerminologyConfig['urgencyLevel']) || 'routine',
+    specialization: import.meta.env.VITE_SPECIALIZATION || 'consultant' // Not used in returned object yet, but parsed
+  };
+
+  // Start with a default configuration
+  let config = {
+    ...baseConfig,
+    buttonTexts: {
+      send: 'Send',
+      clear: 'Clear',
+      export: 'Export',
+    },
+    statusMessages: {
+      thinking: 'Analyzing your request...',
+      processing: `Generating your ${baseConfig.estimateLanguage}...`,
+      complete: `Your ${baseConfig.estimateLanguage} is ready!`,
+    },
+  };
+
+  // Apply industry-specific overrides
   switch (industryType) {
     case 'landscaping':
-      return {
+      config = {
+        ...config,
         businessType: import.meta.env.VITE_BUSINESS_TYPE || 'landscape contractor',
-        serviceTerms: (import.meta.env.VITE_PRIMARY_SERVICES || 'hardscaping,softscaping,maintenance,design').split(','),
-        projectLanguage: import.meta.env.VITE_PROJECT_LANGUAGE || 'outdoor living spaces',
+        projectLanguage: import.meta.env.VITE_PROJECT_LANGUAGE || 'outdoor project',
         estimateLanguage: import.meta.env.VITE_ESTIMATE_LANGUAGE || 'landscape investment',
-        completionTerms: 'property transformation',
-        placeholderExamples: import.meta.env.VITE_PLACEHOLDER_EXAMPLES || 'I can only wish for simple mulch math...',
+        placeholderExamples: import.meta.env.VITE_PLACEHOLDER_EXAMPLES || "e.g., 'I want a new patio and a fire pit.'",
+        urgencyLevel: (import.meta.env.VITE_URGENCY_LEVEL as TerminologyConfig['urgencyLevel']) || 'seasonal',
         buttonTexts: {
           send: 'Get My Landscape Estimate',
           clear: 'Start New Project Design',
           export: 'Download Landscape Proposal'
         },
         statusMessages: {
-          thinking: 'Calculating your landscape investment...',
+          thinking: `Calculating your ${config.estimateLanguage}...`,
           processing: `Designing your outdoor living solution for ${companyName}...`,
           complete: 'Your landscape transformation plan is ready!'
         },
-        urgencyLevel: 'seasonal'
       };
+      break;
 
     case 'hvac':
-      return {
-        businessType: import.meta.env.VITE_BUSINESS_TYPE || 'HVAC contractor',
-        serviceTerms: (import.meta.env.VITE_PRIMARY_SERVICES || 'heating,cooling,ventilation,maintenance').split(','),
-        projectLanguage: import.meta.env.VITE_PROJECT_LANGUAGE || 'comfort systems',
-        estimateLanguage: import.meta.env.VITE_ESTIMATE_LANGUAGE || 'system investment',
-        completionTerms: 'comfort restoration',
-        placeholderExamples: 'e.g., system installation, repair, maintenance, energy audit',
+      config = {
+        ...config,
+        businessType: import.meta.env.VITE_BUSINESS_TYPE || 'HVAC specialist',
+        projectLanguage: import.meta.env.VITE_PROJECT_LANGUAGE || 'comfort system',
+        estimateLanguage: import.meta.env.VITE_ESTIMATE_LANGUAGE || 'system quote',
+        placeholderExamples: import.meta.env.VITE_PLACEHOLDER_EXAMPLES || "e.g., 'My AC is not working'",
+        urgencyLevel: (import.meta.env.VITE_URGENCY_LEVEL as TerminologyConfig['urgencyLevel']) || 'emergency',
         buttonTexts: {
-          send: 'Get My HVAC Estimate',
+          send: 'Get My HVAC Quote',
           clear: 'Start New System Quote',
           export: 'Download HVAC Proposal'
         },
         statusMessages: {
-          thinking: 'Calculating your system investment...',
+          thinking: `Calculating your ${config.estimateLanguage}...`,
           processing: `Designing your comfort solution for ${companyName}...`,
           complete: 'Your comfort system plan is ready!'
         },
-        urgencyLevel: 'emergency'
       };
-
-    default:
-      return {
-        businessType: 'AI Pricing Assistant',
-        serviceTerms: ['pricing', 'estimation', 'analysis', 'consultation'],
-        projectLanguage: 'projects',
-        estimateLanguage: 'pricing',
-        completionTerms: 'project completion',
-        placeholderExamples: 'Describe the job details to generate a price...',
-        buttonTexts: {
-          send: 'Send',
-          clear: 'Clear Chat',
-          export: 'Export Conversation'
-        },
-        statusMessages: {
-          thinking: 'Analyzing your request...',
-          processing: 'Generating your estimate...',
-          complete: 'Your pricing analysis is ready!'
-        },
-        urgencyLevel: 'routine'
-      };
+      break;
   }
+
+  return config;
 };
 
 export const getSmartVisualThemeConfig = (theme: Theme): SmartVisualThemeConfig => {
@@ -270,6 +280,7 @@ export const getSmartVisualThemeConfig = (theme: Theme): SmartVisualThemeConfig 
   const secondaryColor = import.meta.env.VITE_SECONDARY_COLOR;
   const accentColor = import.meta.env.VITE_ACCENT_COLOR;
   const messageStyle = import.meta.env.VITE_MESSAGE_STYLE;
+  const backgroundPattern = import.meta.env.VITE_BACKGROUND_PATTERN;
 
   // Define default colors based on industry
   const industryDefaults = {
@@ -297,7 +308,7 @@ export const getSmartVisualThemeConfig = (theme: Theme): SmartVisualThemeConfig 
   // Define industry-specific patterns and animations
   const industryPatterns = {
     landscaping: {
-      backgroundTexture: 'subtle-organic',
+      backgroundTexture: backgroundPattern || 'subtle-organic',
       borderStyle: 'soft-borders',
       componentShape: messageStyle === 'organic' ? 'organic' : 'geometric',
       messageEntry: 'grow',
@@ -305,7 +316,7 @@ export const getSmartVisualThemeConfig = (theme: Theme): SmartVisualThemeConfig 
       hoverEffect: 'lift',
     },
     tech: {
-      backgroundTexture: 'subtle-tech',
+      backgroundTexture: backgroundPattern || 'subtle-tech',
       borderStyle: 'subtle-borders',
       componentShape: 'geometric',
       messageEntry: 'slide',
@@ -359,6 +370,7 @@ export const getSeasonalConfig = (): SeasonalConfig => {
   const industryType = import.meta.env.VITE_INDUSTRY_TYPE;
   const seasonalThemes = import.meta.env.VITE_USE_SEASONAL_THEMES === 'true';
   const region = import.meta.env.VITE_REGION || 'general';
+  const climateZone = import.meta.env.VITE_CLIMATE_ZONE;
 
   if (!seasonalThemes) {
     return {
@@ -375,7 +387,7 @@ export const getSeasonalConfig = (): SeasonalConfig => {
     return {
       currentSeason,
       seasonalColors: getSeasonalColors(currentSeason, 'landscaping'),
-      seasonalMessage: getSeasonalMessage(currentSeason, 'landscaping', region),
+      seasonalMessage: getSeasonalMessage(currentSeason, 'landscaping', region, climateZone),
       weatherAwareness: true
     };
   }
@@ -397,5 +409,6 @@ export const getCoreConfig = () => {
         makeWebhookUrl: import.meta.env.VITE_MAKE_WEBHOOK_URL,
         companyName: import.meta.env.VITE_COMPANY_NAME || 'TradeSphere',
         headerIcon: (import.meta.env.VITE_HEADER_ICON as keyof typeof Icons) || 'MessageCircle',
-    }
-}
+        logoUrl: import.meta.env.VITE_LOGO_URL,
+    };
+};

@@ -65,6 +65,8 @@ export const createSmartColorSystem = (
   const secondaryDark = adjustColorForDarkMode(secondaryLight);
   const accentDark = adjustColorForDarkMode(accentLight);
 
+  const successLight = import.meta.env.VITE_SUCCESS_COLOR || '#10b981';
+
   return {
     primary: {
       light: primaryLight,
@@ -79,8 +81,8 @@ export const createSmartColorSystem = (
       dark: accentDark,
     },
     success: {
-      light: '#10b981', // Standard success green
-      dark: '#34d399',  // Lighter success green for dark mode
+      light: successLight,
+      dark: adjustColorForDarkMode(successLight),
     },
     text: {
       light: {
