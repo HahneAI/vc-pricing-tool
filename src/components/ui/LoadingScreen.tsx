@@ -6,6 +6,12 @@ const LoadingScreen = () => {
   const config = getLoadingConfig();
   const coreConfig = getCoreConfig();
 
+  // ADD THIS DEBUG LINE HERE:
+  console.log('Logo URL from env:', import.meta.env.VITE_LOGO_URL);
+  console.log('Core config logoUrl:', coreConfig.logoUrl);
+
+  const IconComponent = Icons[config.icon] || Icons.MessageCircle;
+
   const IconComponent = Icons[config.icon] || Icons.MessageCircle;
 
   return (
