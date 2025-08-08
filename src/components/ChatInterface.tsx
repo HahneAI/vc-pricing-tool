@@ -128,7 +128,7 @@ const ChatInterface = () => {
   // Wait for user message to render before showing loading
   setTimeout(() => {
     setIsLoading(true);
-  }, 100);
+  }, 400);
   
   try {
     await sendUserMessageToMake(userMessageText);
