@@ -107,32 +107,37 @@ const ChatInterface = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+ const handleSendMessage = async () => {
+  if (!inputText.trim()) return;
 
-    triggerSendEffect(sendButtonRef.current);
+  triggerSendEffect(sendButtonRef.current);
 
-    const userMessageText = inputText;
-    const messageId = uuidv4();
-    const userMessage: Message = {
-      id: messageId,
-      text: userMessageText,
-      sender: 'user',
-      timestamp: new Date(),
-      sessionId: sessionIdRef.current,
-      status: 'sending',
-    };
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setIsLoading(true);
-    try {
-      await sendUserMessageToMake(userMessageText);
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'sent' } : m));
-    } catch {
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'error', text: `${m.text}\n\n[Error: Could not send message]` } : m));
-      setIsLoading(false);
-    }
+  const userMessageText = inputText;
+  const messageId = uuidv4();
+  const userMessage: Message = {
+    id: messageId,
+    text: userMessageText,
+    sender: 'user',
+    timestamp: new Date(),
+    sessionId: sessionIdRef.current,
+    status: 'sending',
   };
+  setMessages(prev => [...prev, userMessage]);
+  setInputText('');
+  
+  // Wait for user message to render before showing loading
+  setTimeout(() => {
+    setIsLoading(true);
+  }, 100);
+  
+  try {
+    await sendUserMessageToMake(userMessageText);
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'sent' } : m));
+  } catch {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status: 'error', text: `${m.text}\n\n[Error: Could not send message]` } : m));
+    setIsLoading(false);
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
