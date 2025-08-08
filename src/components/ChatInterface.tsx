@@ -130,8 +130,10 @@ const ChatInterface = () => {
     setInputText('');
   });
 
-  // Now set loading state after user message is guaranteed to be rendered
-  setIsLoading(true);
+  // Delay loading state to allow user message animation to start
+  setTimeout(() => {
+    setIsLoading(true);
+  }, 250); // 0.25s = slightly after user message 0.2s delay
   
   try {
     await sendUserMessageToMake(userMessageText);
