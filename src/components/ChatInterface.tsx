@@ -123,13 +123,15 @@ const ChatInterface = () => {
     sessionId: sessionIdRef.current,
     status: 'sending',
   };
-  setMessages(prev => [...prev, userMessage]);
-  setInputText('');
-  
-  // Wait for user message to render before showing loading
-  setTimeout(() => {
-    setIsLoading(true);
-  }, 400);
+
+  // Force synchronous render of user message before loading state
+  flushSync(() => {
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+  });
+
+  // Now set loading state after user message is guaranteed to be rendered
+  setIsLoading(true);
   
   try {
     await sendUserMessageToMake(userMessageText);
