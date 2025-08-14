@@ -292,7 +292,7 @@ const ChatInterface = () => {
 
             {/* Typing Indicator */}
             {isLoading && (
-              <div className="flex items-start gap-3 justify-start">
+              <div className="flex items-start gap-3 justify-start animate-loading-entry">
                 <ThemeAwareAvatar sender="ai" visualConfig={visualConfig} />
                 <div
                   className="px-5 py-3 rounded-2xl shadow-md flex items-center gap-3 transition-colors duration-300"
