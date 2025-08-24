@@ -5,9 +5,6 @@ import Login from './pages/auth/Login.tsx';
 import Register from './pages/auth/Register.tsx';
 import ChatInterface from './components/ChatInterface';
 import NotFound from './pages/NotFound.tsx';
-import MobileTimeEntry from './pages/mobile/TimeEntry.tsx';
-import MobileJobView from './pages/mobile/JobView.tsx';
-import MobileDashboard from './pages/mobile/MobileDashboard.tsx';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoadingScreen from './components/common/LoadingScreen';
 import { ThemeProvider } from './context/ThemeContext';
@@ -37,10 +34,10 @@ function App() {
           <Route path="/" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
           
-          {/* Mobile Routes (Keep for future mobile version) */}
-          <Route path="/mobile/dashboard" element={<ProtectedRoute><MobileDashboard /></ProtectedRoute>} />
-          <Route path="/mobile/time-entry" element={<ProtectedRoute><MobileTimeEntry /></ProtectedRoute>} />
-          <Route path="/mobile/job/:id" element={<ProtectedRoute><MobileJobView /></ProtectedRoute>} />
+          {/* Mobile Routes - Temporarily commented out until file structure is confirmed */}
+          {/* <Route path="/mobile/dashboard" element={<ProtectedRoute><MobileDashboard /></ProtectedRoute>} /> */}
+          {/* <Route path="/mobile/time-entry" element={<ProtectedRoute><MobileTimeEntry /></ProtectedRoute>} /> */}
+          {/* <Route path="/mobile/job/:id" element={<ProtectedRoute><MobileJobView /></ProtectedRoute>} /> */}
           
           {/* Redirect old CRM routes */}
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
@@ -51,5 +48,7 @@ function App() {
     </ThemeProvider>
   );
 }
+
+export default App;
 
 export default App;
