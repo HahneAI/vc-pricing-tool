@@ -28,7 +28,7 @@ const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.Lu
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
-  const { signOut } = useAuth(); // Add this hook
+  const { user, signOut } = useAuth(); // Already importing useAuth - now we use user data!
   const visualConfig = getSmartVisualThemeConfig(theme);
   
   const sessionIdRef = useRef<string>(`quote_session_${Date.now()}`);
@@ -68,12 +68,12 @@ const ChatInterface = () => {
       return;
     }
 
-    // Add this right after the MAKE_WEBHOOK_URL check:
+    // Add user data validation
     if (!user) {
       console.error("No user data available for Make.com webhook");
       throw new Error("User not authenticated");
     }
-    
+
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
@@ -85,10 +85,10 @@ const ChatInterface = () => {
           timestamp: new Date().toISOString(),
           sessionId: sessionIdRef.current,
           source: 'TradeSphere',
-          techId: user.tech_uuid,           // ✅ REAL user data
-          firstName: user.first_name,       // ✅ NEW: user name
-          jobTitle: user.job_title,         // ✅ NEW: job title  
-          betaCodeId: user.beta_code_id     // ✅ NEW: beta code ID
+          techId: user.tech_uuid,           // ✅ REAL tech UUID from logged-in user
+          firstName: user.first_name,       // ✅ ADD user's first name to payload
+          jobTitle: user.job_title,         // ✅ BONUS: job title for context
+          betaCodeId: user.beta_code_id     // ✅ BONUS: beta code ID for tracking
         })
       });
 
@@ -96,7 +96,11 @@ const ChatInterface = () => {
         throw new Error('Failed to send message to Make.com');
       }
       
-      console.log('✅ User message sent to Make.com successfully');
+      console.log('✅ User message sent to Make.com successfully with user data:', {
+        techId: user.tech_uuid,
+        firstName: user.first_name,
+        sessionId: sessionIdRef.current
+      });
     } catch (error) {
       console.error('❌ Error sending user message to Make.com:', error);
       throw error;
