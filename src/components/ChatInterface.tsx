@@ -68,6 +68,12 @@ const ChatInterface = () => {
       return;
     }
 
+    // Add this right after the MAKE_WEBHOOK_URL check:
+    if (!user) {
+      console.error("No user data available for Make.com webhook");
+      throw new Error("User not authenticated");
+    }
+    
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
@@ -75,15 +81,15 @@ const ChatInterface = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-  message: userMessageText,
-  timestamp: new Date().toISOString(),
-  sessionId: sessionIdRef.current,
-  source: 'TradeSphere',
-  techId: user.tech_uuid,           // ✅ REAL user data
-  firstName: user.first_name,       // ✅ NEW: user name
-  jobTitle: user.job_title,         // ✅ NEW: job title  
-  betaCodeId: user.beta_code_id     // ✅ NEW: beta code ID
-})
+          message: userMessageText,
+          timestamp: new Date().toISOString(),
+          sessionId: sessionIdRef.current,
+          source: 'TradeSphere',
+          techId: user.tech_uuid,           // ✅ REAL user data
+          firstName: user.first_name,       // ✅ NEW: user name
+          jobTitle: user.job_title,         // ✅ NEW: job title  
+          betaCodeId: user.beta_code_id     // ✅ NEW: beta code ID
+        })
       });
 
       if (!response.ok) {
