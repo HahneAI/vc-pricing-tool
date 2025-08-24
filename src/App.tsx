@@ -38,14 +38,15 @@ function App() {
 
   // Handle existing user login from BetaLogin  
   const handleExistingUserLogin = async (firstName: string, betaCodeId: string) => {
-    const result = await signInBetaUser(firstName, betaCodeId);
-    if (result.success) {
-      setAppState('authenticated');
-    } else {
-      console.error('Login failed:', result.error);
-      // Error will be handled by BetaLogin component
-    }
-  };
+  const result = await signInBetaUser(firstName, betaCodeId);
+  if (result.success) {
+    setAppState('authenticated');
+  } else {
+    console.error('Login failed:', result.error);
+    // THROW the error so BetaLogin component can catch it
+    throw new Error('login failed... did you get your beta code?');
+  }
+};
 
   // Handle onboarding completion
   const handleOnboardingComplete = async (userData: {
