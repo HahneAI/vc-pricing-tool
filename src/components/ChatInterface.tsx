@@ -301,8 +301,35 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Controls */}
+                        {/* Controls */}
             <div className="flex items-center space-x-3">
+              {/* User Avatar with Name Tag */}
+              <div className="relative">
+                {/* User Avatar */}
+                <div 
+                  className="flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-200 hover:shadow-lg"
+                  style={{
+                    backgroundColor: visualConfig.colors.primary,
+                    color: visualConfig.colors.text.onPrimary,
+                  }}
+                >
+                  <DynamicIcon name="User" className="h-5 w-5" />
+                </div>
+    
+                {/* Minimalistic Name Tag - extends from under avatar shadow */}
+                <div 
+                  className="absolute -bottom-2 -right-1 px-2 py-1 text-xs font-medium rounded-full shadow-lg border transition-all duration-200"
+                  style={{
+                    backgroundColor: visualConfig.colors.surface,
+                    color: visualConfig.colors.text.primary,
+                    borderColor: theme === 'light' ? '#e5e7eb' : '#374151',
+                    fontSize: '0.65rem'
+                  }}
+                >
+                  {user?.first_name || 'User'}
+                </div>
+              </div>
+
               {/* Refresh Button */}
               <button
                 ref={refreshButtonRef}
