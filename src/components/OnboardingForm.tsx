@@ -185,30 +185,6 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, o
                 disabled={loading}
               />
             </div>
-
-            {/* Login Information */}
-            <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-              <h4 className="text-sm font-medium text-blue-800 mb-2">
-                <Key className="w-4 h-4 inline mr-1" />
-                Your Login Information
-              </h4>
-              <div className="text-sm text-blue-700">
-                <p><strong>Username:</strong> {formData.firstName || '[Enter first name]'}</p>
-                <p><strong>Password:</strong> {betaCodeId}</p>
-              </div>
-              <p className="text-xs text-blue-600 mt-2">
-                Use these credentials to login after account creation
-              </p>
-            </div>
-
-            {/* Preview */}
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-sm text-gray-600">
-                <strong>First Name:</strong> {formData.firstName}<br />
-                <strong>Job Title:</strong> {formData.jobTitle}<br />
-                <strong>Email:</strong> {formData.email || 'Not provided'}
-              </p>
-            </div>
           </div>
 
           {/* Error Message */}
