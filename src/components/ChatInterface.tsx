@@ -168,6 +168,14 @@ const ChatInterface = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ENHANCED: Initialize with user context when user changes
+  useEffect(() => {
+    if (user && !sessionIdRef.current.includes(user.first_name.toLowerCase())) {
+    // User logged in or switched - regenerate session with their context
+    handleRefreshChat();
+  }
+}, [user]); // React to user changes
+
   const handleRefreshChat = () => {
   if (!user) {
     console.error("Cannot refresh chat - no user logged in");
