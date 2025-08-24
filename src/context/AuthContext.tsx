@@ -1,125 +1,238 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useRef } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
-import { getSupabase } from '../services/supabase';
-import { UserProfile } from '../types/user';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import * as bcrypt from 'bcryptjs'; // You'll need to install this: npm install bcryptjs @types/bcryptjs
 
-// Updated mock user profile to match new schema
-const mockUserProfile: UserProfile = {
-  id: 'user-1',
-  email: 'admin@example.com',
-  full_name: 'Admin User',
-  role: 'admin',
-  company_id: 'company-1',
-  phone: '555-123-4567',
-  is_active: true,
-  created_at: '2023-06-01T00:00:00Z',
-  updated_at: '2023-06-01T00:00:00Z'
-};
+interface BetaUser {
+  id: string;
+  email: string;
+  full_name: string;
+  job_title: string;
+  tech_uuid: string;
+  beta_code_used: string;
+  is_active: boolean;
+  created_at: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  userProfile: UserProfile | null;
+  user: BetaUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string, full_name: string) => Promise<{ error: AuthError | null, data: any }>;
-  signOut: () => Promise<void>;
-  isAdmin: boolean;
+  validateBetaCode: (code: string) => Promise<{ valid: boolean; error?: string }>;
+  registerBetaUser: (userData: {
+    email: string;
+    fullName: string;
+    jobTitle: string;
+    password: string;
+  }, betaCode: string) => Promise<{ success: boolean; error?: string }>;
+  signInBetaUser: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<BetaUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  
-  // Prevent multiple concurrent auth checks
-  const authCheckInProgress = useRef(false);
   const initialized = useRef(false);
 
-  // Always use mock authentication - no Supabase required
-  const supabaseConfigured = useMemo(() => false, []);
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      // Always use mock data
-      setUserProfile(mockUserProfile);
-      setIsAdmin(mockUserProfile.role === 'admin');
-      return;
-    } catch (error) {
-      // Final fallback to mock data on any error
-      setUserProfile(mockUserProfile);
-      setIsAdmin(true);
-    }
-  };
-
+  // Initialize auth state
   useEffect(() => {
-    // Prevent multiple initialization attempts
     if (initialized.current) return;
     initialized.current = true;
 
-    const initializeAuth = async () => {
-      // Prevent multiple concurrent auth checks
-      if (authCheckInProgress.current) return;
-      authCheckInProgress.current = true;
-
-      try {
-        // Always use mock auth - instant login
-        setUser({ id: mockUserProfile.id } as User);
-        setUserProfile(mockUserProfile);
-        setIsAdmin(mockUserProfile.role === 'admin');
-        setLoading(false);
-        authCheckInProgress.current = false;
-        
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        // Fall back to mock data on any error
-        setUser({ id: mockUserProfile.id } as User);
-        setUserProfile(mockUserProfile);
-        setIsAdmin(mockUserProfile.role === 'admin');
-      } finally {
-        setLoading(false);
-        authCheckInProgress.current = false;
+    const initAuth = () => {
+      // Check for existing session in localStorage
+      const storedUser = localStorage.getItem('tradesphere_beta_user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        } catch (error) {
+          console.error('Failed to parse stored user data:', error);
+          localStorage.removeItem('tradesphere_beta_user');
+        }
       }
+      setLoading(false);
     };
 
-    initializeAuth();
-  }, [supabaseConfigured]);
+    initAuth();
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
-    // Always use mock sign in
-    setUser({ id: mockUserProfile.id } as User);
-    setUserProfile(mockUserProfile);
-    setIsAdmin(mockUserProfile.role === 'admin');
-    return { error: null };
+  const validateBetaCode = async (code: string): Promise<{ valid: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/beta_codes?code=eq.${code}`, {
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        return { valid: false, error: 'Failed to validate beta code' };
+      }
+
+      const codes = await response.json();
+      
+      if (codes.length === 0) {
+        return { valid: false, error: 'Invalid beta code' };
+      }
+
+      const betaCode = codes[0];
+      
+      if (betaCode.used) {
+        return { valid: false, error: 'Beta code already used' };
+      }
+
+      if (new Date(betaCode.expires_at) < new Date()) {
+        return { valid: false, error: 'Beta code expired' };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      console.error('Beta code validation error:', error);
+      return { valid: false, error: 'Network error validating beta code' };
+    }
   };
 
-  const signUp = async (email: string, password: string, full_name: string) => {
-    // Always use mock sign up
-    setUser({ id: mockUserProfile.id } as User);
-    setUserProfile(mockUserProfile);
-    setIsAdmin(mockUserProfile.role === 'admin');
-    return { error: null, data: { user: mockUserProfile } };
+  const registerBetaUser = async (
+    userData: {
+      email: string;
+      fullName: string;
+      jobTitle: string;
+      password: string;
+    },
+    betaCode: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // First, validate the beta code again
+      const codeValidation = await validateBetaCode(betaCode);
+      if (!codeValidation.valid) {
+        return { success: false, error: codeValidation.error };
+      }
+
+      // Hash the password
+      const passwordHash = await bcrypt.hash(userData.password, 10);
+
+      // Create the user
+      const createUserResponse = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          full_name: userData.fullName,
+          job_title: userData.jobTitle,
+          password_hash: passwordHash,
+          beta_code_used: betaCode
+        })
+      });
+
+      if (!createUserResponse.ok) {
+        const errorData = await createUserResponse.json();
+        return { success: false, error: errorData.message || 'Failed to create user account' };
+      }
+
+      const newUser = (await createUserResponse.json())[0] as BetaUser;
+
+      // Mark the beta code as used
+      const updateCodeResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?code=eq.${betaCode}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          used: true,
+          used_by_email: userData.email,
+          used_by_user_id: newUser.id,
+          used_at: new Date().toISOString()
+        })
+      });
+
+      if (!updateCodeResponse.ok) {
+        console.error('Failed to mark beta code as used');
+        // Don't fail the registration for this, but log it
+      }
+
+      // Set user in state and localStorage
+      setUser(newUser);
+      localStorage.setItem('tradesphere_beta_user', JSON.stringify(newUser));
+
+      return { success: true };
+    } catch (error) {
+      console.error('User registration error:', error);
+      return { success: false, error: 'Failed to create account' };
+    }
   };
 
-  const signOut = async () => {
-    // Mock sign out - but keep user logged in for no-auth mode
-    // Don't actually sign out to maintain access
-    return;
+  const signInBetaUser = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Find user by email
+      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?email=eq.${email}`, {
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        return { success: false, error: 'Login failed' };
+      }
+
+      const users = await response.json();
+      
+      if (users.length === 0) {
+        return { success: false, error: 'Account not found' };
+      }
+
+      const userAccount = users[0];
+
+      // Check if account is active
+      if (!userAccount.is_active) {
+        return { success: false, error: 'Account is deactivated' };
+      }
+
+      // Verify password
+      const passwordMatch = await bcrypt.compare(password, userAccount.password_hash);
+      if (!passwordMatch) {
+        return { success: false, error: 'Invalid password' };
+      }
+
+      // Remove password hash from user object before storing
+      const { password_hash, ...safeUser } = userAccount;
+      const betaUser = safeUser as BetaUser;
+
+      // Set user in state and localStorage
+      setUser(betaUser);
+      localStorage.setItem('tradesphere_beta_user', JSON.stringify(betaUser));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { success: false, error: 'Login failed' };
+    }
+  };
+
+  const signOut = () => {
+    setUser(null);
+    localStorage.removeItem('tradesphere_beta_user');
   };
 
   const value = {
     user,
-    session,
-    userProfile,
     loading,
-    signIn,
-    signUp,
-    signOut,
-    isAdmin
+    validateBetaCode,
+    registerBetaUser,
+    signInBetaUser,
+    signOut
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
