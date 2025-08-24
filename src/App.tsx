@@ -87,8 +87,8 @@ function App() {
     return <LoadingScreen />;
   }
 
+  {console.log('🎨 APP.TSX - Rendering:', { loading, user: !!user })}
   return (
-    {console.log('🎨 APP.TSX - Rendering:', { loading, user: !!user })}
     <ThemeProvider>
       <ThemeApplicator />
       <div className="min-h-screen transition-colors duration-500 bg-background text-text-primary">
