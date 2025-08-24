@@ -230,7 +230,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>
+    {console.log('🎨 AUTH_CONTEXT - Providing:', { loading, user: !!user })}
+    {children}</AuthContext.Provider>;
 }
 
 export const useAuth = (): AuthContextType => {
