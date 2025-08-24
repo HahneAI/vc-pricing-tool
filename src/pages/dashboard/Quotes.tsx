@@ -30,7 +30,7 @@ const Quotes = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Replace with your actual Make.com webhook URL
-  const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/swi79ksdmw85xk1wjmqpac4rvbcw0p7v';
+  const MAKE_WEBHOOK_URL = import.meta.env.VITE_MAKE_WEBHOOK_URL || 'https://hook.us1.make.com/swi79ksdmw85xk1wjmqpac4rvbcw0p7v';
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
   // Send user message to Make.com
