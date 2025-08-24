@@ -5,6 +5,7 @@ import './index.css';
 import './styles/enterprise-theme.css';
 import './styles/theme.css';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './context/AuthContext';
 
 const registerPWA = async () => {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
@@ -29,8 +30,10 @@ const registerPWA = async () => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-    <Toaster position="top-right" />
+    <AuthProvider>  {/* Add this */}
+      <App />
+      <Toaster position="top-right" />
+    </AuthProvider>  {/* Add this */}
   </StrictMode>
 );
 
