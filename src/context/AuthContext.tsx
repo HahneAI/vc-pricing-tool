@@ -2,9 +2,9 @@ import { createContext, useContext, useState, useEffect, ReactNode, useRef } fro
 
 interface BetaUser {
   id: string;
-  email: string;
+  email?: string; // Now optional
   first_name: string;
-  full_name: string;
+  full_name?: string; // Now optional
   job_title: string;
   tech_uuid: string;
   beta_code_used: string;
@@ -18,18 +18,19 @@ interface AuthContextType {
   loading: boolean;
   validateBetaCode: (code: string) => Promise<{ valid: boolean; error?: string }>;
   registerBetaUser: (userData: {
-    email: string;
     firstName: string;
-    fullName: string;
     jobTitle: string;
-  }, betaCode: string, betaCodeId: number) => Promise<{ success: boolean; error?: string }>;
+    email: string;
+  }, betaCode: string, betaCodeId: number) => Promise<{ success: boolean; error?: string; userData?: any }>;
   signInBetaUser: (firstName: string, betaCodeId: string) => Promise<{ success: boolean; error?: string }>;
+  completeRegistration: (userData: any) => void;
   signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  console.log('🟢 AUTH_CONTEXT - Provider mounting...');
   const [user, setUser] = useState<BetaUser | null>(null);
   const [loading, setLoading] = useState(true);
   const initialized = useRef(false);
@@ -99,14 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerBetaUser = async (
     userData: {
-      email: string;
       firstName: string;
-      fullName: string;
       jobTitle: string;
+      email: string;
     },
     betaCode: string,
     betaCodeId: number
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; userData?: any }> => {
     try {
       // First, validate the beta code again
       const codeValidation = await validateBetaCode(betaCode);
@@ -124,9 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Prefer': 'return=representation'
         },
         body: JSON.stringify({
-          email: userData.email,
+          email: userData.email || null, // Handle optional email
           first_name: userData.firstName,
-          full_name: userData.fullName,
           job_title: userData.jobTitle,
           beta_code_used: betaCode,
           beta_code_id: betaCodeId
@@ -150,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           used: true,
-          used_by_email: userData.email,
+          used_by_email: userData.email || null,
           used_by_user_id: newUser.id,
           used_at: new Date().toISOString()
         })
@@ -161,11 +160,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Don't fail the registration for this, but log it
       }
 
-      // Set user in state and localStorage
-      setUser(newUser);
-      localStorage.setItem('tradesphere_beta_user', JSON.stringify(newUser));
-
-      return { success: true };
+      // Don't set user in state/localStorage yet - wait for confirmation
+      // Just return the user data for the confirmation page
+      return { success: true, userData: newUser };
     } catch (error) {
       console.error('User registration error:', error);
       return { success: false, error: 'Failed to create account' };
@@ -174,8 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInBetaUser = async (firstName: string, betaCodeId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Find user by first name and beta code id
-      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?first_name=eq.${firstName}&beta_code_id=eq.${betaCodeId}`, {
+      // Find user by first name (case-insensitive) and beta code id
+      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?first_name=ilike.${firstName}&beta_code_id=eq.${betaCodeId}`, {
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           'apikey': supabaseKey,
@@ -218,16 +215,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('tradesphere_beta_user');
   };
 
+  const completeRegistration = (userData: BetaUser) => {
+    setUser(userData);
+    localStorage.setItem('tradesphere_beta_user', JSON.stringify(userData));
+  };
+
   const value = {
     user,
     loading,
     validateBetaCode,
     registerBetaUser,
     signInBetaUser,
+    completeRegistration,
     signOut
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>
+    {console.log('🎨 AUTH_CONTEXT - Providing:', { loading, user: !!user })}
+    {children}</AuthContext.Provider>;
 }
 
 export const useAuth = (): AuthContextType => {

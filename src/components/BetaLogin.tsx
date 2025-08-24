@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { Lock, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface BetaLoginProps {
-  onValidCode: (code: string, codeId: number) => void; // Add codeId parameter
-  onExistingUser: (firstName: string, betaCodeId: string) => void; // Change to firstName + betaCodeId
+  onValidCode: (code: string, codeId: number) => void;
+  onExistingUser: (firstName: string, betaCodeId: string) => Promise<void>;  // <-- Make async
 }
 
 const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) => {
   const [mode, setMode] = useState<'beta_code' | 'existing_user'>('beta_code');
   const [betaCode, setBetaCode] = useState('');
-  const [firstName, setFirstName] = useState(''); // Change from email to firstName
-  const [betaCodeId, setBetaCodeId] = useState(''); // Change from password to betaCodeId
+  const [firstName, setFirstName] = useState('');
+  const [betaCodeId, setBetaCodeId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -77,7 +77,7 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
       // Code is valid!
       setSuccess('Valid beta code! Proceeding to registration...');
       setTimeout(() => {
-        onValidCode(betaCode, code.id); // Pass both code and ID
+        onValidCode(betaCode, code.id);
       }, 1000);
 
     } catch (error) {
@@ -89,22 +89,22 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
   };
 
   const handleExistingUserLogin = async () => {
-    if (!firstName || !betaCodeId) {
-      setError('Please enter both first name and key number');
-      return;
-    }
+  if (!firstName || !betaCodeId) {
+    setError('Please enter both first name and key number');
+    return;
+  }
 
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    try {
-      onExistingUser(firstName, betaCodeId);
-    } catch (error) {
-      setError('Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await onExistingUser(firstName, betaCodeId);  // <-- Add await here!
+  } catch (error) {
+    setError('login failed... did you get your beta code?');  // <-- Your custom message
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +170,7 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
                   onChange={handleBetaCodeChange}
                   placeholder="BETA-XXXX-XXXX"
                   maxLength={14}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center font-mono text-lg"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center font-mono text-lg text-gray-900 placeholder-gray-500"
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-500 mt-1 text-center">
@@ -190,7 +190,7 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
                   value={firstName}
                   onChange={(e) => {setFirstName(e.target.value); setError('');}}
                   placeholder="John"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                   disabled={loading}
                 />
               </div>
@@ -204,7 +204,7 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
                   value={betaCodeId}
                   onChange={(e) => {setBetaCodeId(e.target.value); setError('');}}
                   placeholder="7"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-500 mt-1">

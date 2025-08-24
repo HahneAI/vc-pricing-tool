@@ -28,10 +28,24 @@ const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.Lu
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
-  const { signOut } = useAuth(); // Add this hook
+  const { user, signOut } = useAuth(); // Already importing useAuth - now we use user data!
   const visualConfig = getSmartVisualThemeConfig(theme);
+
+  const generateSessionId = () => {
+  if (!user) {
+    console.warn("No user context for session generation, using basic session ID");
+    return `quote_session_${Date.now()}`;
+  }
   
-  const sessionIdRef = useRef<string>(`quote_session_${Date.now()}`);
+  // Include user context in session ID for better tracking
+  const userPrefix = user.first_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const betaId = user.beta_code_id;
+  const timestamp = Date.now();
+  
+  return `quote_session_${userPrefix}_${betaId}_${timestamp}`;
+};
+  
+  const sessionIdRef = useRef<string>(generateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastPollTimeRef = useRef<Date>(new Date());
   const sendButtonRef = useRef<HTMLButtonElement>(null);
@@ -68,6 +82,12 @@ const ChatInterface = () => {
       return;
     }
 
+    // Add user data validation
+    if (!user) {
+      console.error("No user data available for Make.com webhook");
+      throw new Error("User not authenticated");
+    }
+
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
@@ -79,7 +99,10 @@ const ChatInterface = () => {
           timestamp: new Date().toISOString(),
           sessionId: sessionIdRef.current,
           source: 'TradeSphere',
-          techId: '22222222-2222-2222-2222-222222222222'
+          techId: user.tech_uuid,           // ✅ REAL tech UUID from logged-in user
+          firstName: user.first_name,       // ✅ ADD user's first name to payload
+          jobTitle: user.job_title,         // ✅ BONUS: job title for context
+          betaCodeId: user.beta_code_id     // ✅ BONUS: beta code ID for tracking
         })
       });
 
@@ -87,7 +110,11 @@ const ChatInterface = () => {
         throw new Error('Failed to send message to Make.com');
       }
       
-      console.log('✅ User message sent to Make.com successfully');
+      console.log('✅ User message sent to Make.com successfully with user data:', {
+        techId: user.tech_uuid,
+        firstName: user.first_name,
+        sessionId: sessionIdRef.current
+      });
     } catch (error) {
       console.error('❌ Error sending user message to Make.com:', error);
       throw error;
@@ -99,7 +126,8 @@ const ChatInterface = () => {
     if (!NETLIFY_API_URL) return;
     
     try {
-      const response = await fetch(`${NETLIFY_API_URL}?since=${lastPollTimeRef.current.toISOString()}`);
+      const currentApiUrl = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
+      const response = await fetch(`${currentApiUrl}?since=${lastPollTimeRef.current.toISOString()}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch AI messages');
@@ -141,20 +169,64 @@ const ChatInterface = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleRefreshChat = () => {
-    sessionIdRef.current = `quote_session_${Date.now()}`;
+  // ENHANCED: Initialize with user context when user changes
+  useEffect(() => {
+    if (user && !sessionIdRef.current.includes(user.first_name.toLowerCase())) {
+    // User logged in or switched - regenerate session with their context
+    handleRefreshChat();
+  }
+}, [user]); // React to user changes
+
+  // ⭐ Casual welcome message fix
+useEffect(() => {
+  if (user && messages.length === 1 && !messages[0].text.includes(user.first_name)) {
     setMessages([{
       id: '1',
-      text: welcomeMessage,
+      text: `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`,
       sender: 'ai',
       timestamp: new Date(),
       sessionId: sessionIdRef.current
     }]);
-    setIsLoading(false);
-    setInputText('');
-    lastPollTimeRef.current = new Date();
-    console.log('🔄 Chat refreshed with new session:', sessionIdRef.current);
-  };
+    console.log('✅ Personalized initial welcome for:', user.first_name);
+  }
+}, [user]);
+
+  const handleRefreshChat = () => {
+  if (!user) {
+    console.error("Cannot refresh chat - no user logged in");
+    return;
+  }
+
+  // Generate new user-contextual session ID
+  sessionIdRef.current = generateSessionId();
+
+  // Reset messages to initial welcome message with user's name
+  const personalizedWelcome = user.first_name 
+    ? `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`
+    : welcomeMessage;
+
+  setMessages([{
+    id: '1',
+    text: personalizedWelcome,
+    sender: 'ai',
+    timestamp: new Date(),
+    sessionId: sessionIdRef.current
+  }]);
+
+  // Clear any loading states
+  setIsLoading(false);
+  setInputText('');
+
+  // Reset polling timestamp
+  lastPollTimeRef.current = new Date();
+
+  console.log('🔄 Chat refreshed with new user session:', sessionIdRef.current);
+  console.log('👤 User context:', { 
+    name: user.first_name, 
+    betaId: user.beta_code_id,
+    techId: user.tech_uuid 
+  });
+};
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
