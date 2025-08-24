@@ -13,6 +13,7 @@ function App() {
   const { user, loading, validateBetaCode, registerBetaUser, signInBetaUser } = useAuth();
   const [appState, setAppState] = useState<AppState>('loading');
   const [validBetaCode, setValidBetaCode] = useState<string>('');
+  const [betaCodeId, setBetaCodeId] = useState<number>(0);
   const [registrationError, setRegistrationError] = useState('');
 
   useEffect(() => {
@@ -28,14 +29,15 @@ function App() {
   }, [loading, user]);
 
   // Handle valid beta code from BetaLogin
-  const handleValidBetaCode = (code: string) => {
+  const handleValidBetaCode = (code: string, codeId: number) => {
     setValidBetaCode(code);
+    setBetaCodeId(codeId);
     setAppState('onboarding');
   };
 
   // Handle existing user login from BetaLogin  
-  const handleExistingUserLogin = async (email: string, password: string) => {
-    const result = await signInBetaUser(email, password);
+  const handleExistingUserLogin = async (firstName: string, betaCodeId: string) => {
+    const result = await signInBetaUser(firstName, betaCodeId);
     if (result.success) {
       setAppState('authenticated');
     } else {
@@ -47,13 +49,13 @@ function App() {
   // Handle onboarding completion
   const handleOnboardingComplete = async (userData: {
     email: string;
+    firstName: string;
     fullName: string;
     jobTitle: string;
-    password: string;
   }) => {
     setRegistrationError('');
     
-    const result = await registerBetaUser(userData, validBetaCode);
+    const result = await registerBetaUser(userData, validBetaCode, betaCodeId);
     
     if (result.success) {
       setAppState('authenticated');
@@ -83,6 +85,7 @@ function App() {
           <div>
             <OnboardingForm
               betaCode={validBetaCode}
+              betaCodeId={betaCodeId}
               onComplete={handleOnboardingComplete}
             />
             {registrationError && (
@@ -104,8 +107,9 @@ function App() {
             {/* Debug info - remove in production */}
             <div className="hidden">
               <p>Logged in as: {user.full_name} ({user.job_title})</p>
+              <p>First Name: {user.first_name}</p>
               <p>Tech UUID: {user.tech_uuid}</p>
-              <p>Beta Code: {user.beta_code_used}</p>
+              <p>Beta Code: {user.beta_code_used} (ID: {user.beta_code_id})</p>
             </div>
             
             <ChatInterface />
