@@ -21,8 +21,9 @@ interface AuthContextType {
     firstName: string;
     jobTitle: string;
     email: string;
-  }, betaCode: string, betaCodeId: number) => Promise<{ success: boolean; error?: string }>;
+  }, betaCode: string, betaCodeId: number) => Promise<{ success: boolean; error?: string; userData?: any }>;
   signInBetaUser: (firstName: string, betaCodeId: string) => Promise<{ success: boolean; error?: string }>;
+  completeRegistration: (userData: any) => void;
   signOut: () => void;
 }
 
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     betaCode: string,
     betaCodeId: number
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; userData?: any }> => {
     try {
       // First, validate the beta code again
       const codeValidation = await validateBetaCode(betaCode);
@@ -158,11 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Don't fail the registration for this, but log it
       }
 
-      // Set user in state and localStorage
-      setUser(newUser);
-      localStorage.setItem('tradesphere_beta_user', JSON.stringify(newUser));
-
-      return { success: true };
+      // Don't set user in state/localStorage yet - wait for confirmation
+      // Just return the user data for the confirmation page
+      return { success: true, userData: newUser };
     } catch (error) {
       console.error('User registration error:', error);
       return { success: false, error: 'Failed to create account' };
@@ -215,12 +214,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('tradesphere_beta_user');
   };
 
+  const completeRegistration = (userData: BetaUser) => {
+    setUser(userData);
+    localStorage.setItem('tradesphere_beta_user', JSON.stringify(userData));
+  };
+
   const value = {
     user,
     loading,
     validateBetaCode,
     registerBetaUser,
     signInBetaUser,
+    completeRegistration,
     signOut
   };
 
