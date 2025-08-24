@@ -2,9 +2,9 @@ import { createContext, useContext, useState, useEffect, ReactNode, useRef } fro
 
 interface BetaUser {
   id: string;
-  email: string;
+  email?: string; // Now optional
   first_name: string;
-  full_name: string;
+  full_name?: string; // Now optional
   job_title: string;
   tech_uuid: string;
   beta_code_used: string;
@@ -18,10 +18,9 @@ interface AuthContextType {
   loading: boolean;
   validateBetaCode: (code: string) => Promise<{ valid: boolean; error?: string }>;
   registerBetaUser: (userData: {
-    email: string;
     firstName: string;
-    fullName: string;
     jobTitle: string;
+    email: string;
   }, betaCode: string, betaCodeId: number) => Promise<{ success: boolean; error?: string }>;
   signInBetaUser: (firstName: string, betaCodeId: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => void;
@@ -99,10 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerBetaUser = async (
     userData: {
-      email: string;
       firstName: string;
-      fullName: string;
       jobTitle: string;
+      email: string;
     },
     betaCode: string,
     betaCodeId: number
@@ -124,9 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Prefer': 'return=representation'
         },
         body: JSON.stringify({
-          email: userData.email,
+          email: userData.email || null, // Handle optional email
           first_name: userData.firstName,
-          full_name: userData.fullName,
           job_title: userData.jobTitle,
           beta_code_used: betaCode,
           beta_code_id: betaCodeId
@@ -150,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           used: true,
-          used_by_email: userData.email,
+          used_by_email: userData.email || null,
           used_by_user_id: newUser.id,
           used_at: new Date().toISOString()
         })
@@ -174,8 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInBetaUser = async (firstName: string, betaCodeId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Find user by first name and beta code id
-      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?first_name=eq.${firstName}&beta_code_id=eq.${betaCodeId}`, {
+      // Find user by first name (case-insensitive) and beta code id
+      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?first_name=ilike.${firstName}&beta_code_id=eq.${betaCodeId}`, {
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           'apikey': supabaseKey,
