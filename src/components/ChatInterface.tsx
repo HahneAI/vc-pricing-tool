@@ -181,7 +181,7 @@ useEffect(() => {
   if (user && messages.length === 1 && !messages[0].text.includes(user.first_name)) {
     setMessages([{
       id: '1',
-      text: `Hey ${user.first_name}, what's the customer scoop?`,
+      text: `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`,
       sender: 'ai',
       timestamp: new Date(),
       sessionId: sessionIdRef.current
@@ -201,8 +201,8 @@ useEffect(() => {
 
   // Reset messages to initial welcome message with user's name
   const personalizedWelcome = user.first_name 
-  ? `Hey ${user.first_name}, what's the customer scoop?`
-  : welcomeMessage;
+    ? `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`
+    : welcomeMessage;
 
   setMessages([{
     id: '1',
