@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { Lock, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface BetaLoginProps {
-  onValidCode: (code: string) => void;
-  onExistingUser: (email: string, password: string) => void;
+  onValidCode: (code: string, codeId: number) => void; // Add codeId parameter
+  onExistingUser: (firstName: string, betaCodeId: string) => void; // Change to firstName + betaCodeId
 }
 
 const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) => {
   const [mode, setMode] = useState<'beta_code' | 'existing_user'>('beta_code');
   const [betaCode, setBetaCode] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState(''); // Change from email to firstName
+  const [betaCodeId, setBetaCodeId] = useState(''); // Change from password to betaCodeId
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -77,7 +77,7 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
       // Code is valid!
       setSuccess('Valid beta code! Proceeding to registration...');
       setTimeout(() => {
-        onValidCode(betaCode);
+        onValidCode(betaCode, code.id); // Pass both code and ID
       }, 1000);
 
     } catch (error) {
@@ -89,8 +89,8 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
   };
 
   const handleExistingUserLogin = async () => {
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    if (!firstName || !betaCodeId) {
+      setError('Please enter both first name and key number');
       return;
     }
 
@@ -98,7 +98,7 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
     setError('');
 
     try {
-      onExistingUser(email, password);
+      onExistingUser(firstName, betaCodeId);
     } catch (error) {
       setError('Login failed. Please check your credentials.');
     } finally {
@@ -181,32 +181,35 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
           ) : (
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name
                 </label>
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => {setEmail(e.target.value); setError('');}}
-                  placeholder="your.email@company.com"
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => {setFirstName(e.target.value); setError('');}}
+                  placeholder="John"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                <label htmlFor="betaCodeId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Key Number
                 </label>
                 <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {setPassword(e.target.value); setError('');}}
-                  placeholder="Your password"
+                  id="betaCodeId"
+                  type="text"
+                  value={betaCodeId}
+                  onChange={(e) => {setBetaCodeId(e.target.value); setError('');}}
+                  placeholder="7"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  The number from your beta code registration
+                </p>
               </div>
             </div>
           )}
