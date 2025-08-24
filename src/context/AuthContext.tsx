@@ -30,6 +30,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  console.log('🟢 AUTH_CONTEXT - Provider mounting...');
   const [user, setUser] = useState<BetaUser | null>(null);
   const [loading, setLoading] = useState(true);
   const initialized = useRef(false);
