@@ -126,7 +126,8 @@ const ChatInterface = () => {
     if (!NETLIFY_API_URL) return;
     
     try {
-      const response = await fetch(`${NETLIFY_API_URL}?since=${lastPollTimeRef.current.toISOString()}`);
+      const currentApiUrl = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
+      const response = await fetch(`${currentApiUrl}?since=${lastPollTimeRef.current.toISOString()}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch AI messages');
