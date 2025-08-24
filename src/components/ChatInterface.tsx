@@ -201,8 +201,8 @@ useEffect(() => {
 
   // Reset messages to initial welcome message with user's name
   const personalizedWelcome = user.first_name 
-    ? `Hey ${user.first_name}, what's the customer scoop?`
-    : welcomeMessage;
+  ? `Hey ${user.first_name}, what's the customer scoop?`
+  : welcomeMessage;
 
   setMessages([{
     id: '1',
