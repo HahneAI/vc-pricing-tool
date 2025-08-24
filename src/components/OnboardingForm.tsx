@@ -3,20 +3,21 @@ import { User, Briefcase, Mail, Key, CheckCircle, AlertCircle } from 'lucide-rea
 
 interface OnboardingFormProps {
   betaCode: string;
+  betaCodeId: number; // Add beta code ID
   onComplete: (userData: {
     email: string;
+    firstName: string; // Change to firstName
     fullName: string;
     jobTitle: string;
-    password: string;
   }) => void;
 }
 
-const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, onComplete }) => {
+const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, onComplete }) => {
   const [formData, setFormData] = useState({
     email: '',
+    firstName: '',
     fullName: '',
-    jobTitle: '',
-    password: ''
+    jobTitle: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,7 +45,7 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, onComplete })
   };
 
   const validateStep1 = () => {
-    if (!formData.email || !formData.fullName) {
+    if (!formData.email || !formData.firstName || !formData.fullName) {
       setError('Please fill in all required fields');
       return false;
     }
@@ -59,13 +60,8 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, onComplete })
   };
 
   const validateStep2 = () => {
-    if (!formData.jobTitle || !formData.password) {
-      setError('Please fill in all required fields');
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (!formData.jobTitle) {
+      setError('Please select your job title');
       return false;
     }
 
@@ -184,6 +180,24 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, onComplete })
               </div>
 
               <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4 inline mr-1" />
+                  First Name (Login Username) *
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder="John"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-1">This will be your username to login</p>
+              </div>
+
+              <div>
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                   <User className="w-4 h-4 inline mr-1" />
                   Full Name *
@@ -228,23 +242,18 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, onComplete })
                 </select>
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              {/* Login Information */}
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+                <h4 className="text-sm font-medium text-blue-800 mb-2">
                   <Key className="w-4 h-4 inline mr-1" />
-                  Create Password *
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="At least 6 characters"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  disabled={loading}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  You'll use this to log in to TradeSphere
+                  Your Login Information
+                </h4>
+                <div className="text-sm text-blue-700">
+                  <p><strong>Username:</strong> {formData.firstName || '[Enter first name]'}</p>
+                  <p><strong>Password:</strong> {betaCodeId}</p>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  Use these credentials to login after account creation
                 </p>
               </div>
 
@@ -252,7 +261,8 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, onComplete })
               <div className="bg-gray-50 p-3 rounded-md">
                 <p className="text-sm text-gray-600">
                   <strong>Email:</strong> {formData.email}<br />
-                  <strong>Name:</strong> {formData.fullName}
+                  <strong>Name:</strong> {formData.fullName}<br />
+                  <strong>First Name:</strong> {formData.firstName}
                 </p>
               </div>
             </div>
