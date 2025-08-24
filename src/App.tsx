@@ -87,11 +87,11 @@ function App() {
     return <LoadingScreen />;
   }
 
-  {console.log('🎨 APP.TSX - Rendering:', { loading, user: !!user })}
   return (
     <ThemeProvider>
       <ThemeApplicator />
       <div className="min-h-screen transition-colors duration-500 bg-background text-text-primary">
+        {console.log('🎨 APP.TSX - Rendering:', { loading, user: !!user })}
         {appState === 'login' && (
           <BetaLogin
             onValidCode={handleValidBetaCode}
