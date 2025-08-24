@@ -44,7 +44,7 @@ function App() {
       <Route path="/materials" element={<ProtectedRoute><Materials /></ProtectedRoute>} />
       
       <Route path="/employees" element={<AdminRoute><Employees /></AdminRoute>} />
-      <Route path="/companies" element={<AdminRoute><Companies /></ProtectedRoute>} />
+      <Route path="/companies" element={<AdminRoute><Companies /></AdminRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       
       <Route path="/mobile/dashboard" element={<ProtectedRoute><MobileDashboard /></ProtectedRoute>} />
