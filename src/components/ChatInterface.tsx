@@ -100,7 +100,7 @@ const ChatInterface = () => {
   }, [NETLIFY_API_URL]);
 
   useEffect(() => {
-    const pollingInterval = setInterval(pollForAiMessages, 3000);
+    const pollingInterval = setInterval(pollForAiMessages, 1000);
     return () => clearInterval(pollingInterval);
   }, [pollForAiMessages]);
 
