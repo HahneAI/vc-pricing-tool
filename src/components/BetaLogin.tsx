@@ -3,7 +3,7 @@ import { Lock, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface BetaLoginProps {
   onValidCode: (code: string, codeId: number) => void;
-  onExistingUser: (firstName: string, betaCodeId: string) => void;
+  onExistingUser: (firstName: string, betaCodeId: string) => Promise<void>;  // <-- Make async
 }
 
 const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) => {
