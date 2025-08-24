@@ -7,6 +7,8 @@ import LoadingScreen from './components/ui/LoadingScreen';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeApplicator } from './components/ThemeApplicator';
 
+console.log('🟢 APP.TSX - Component mounting...');
+
 type AppState = 'loading' | 'login' | 'onboarding' | 'confirmation' | 'authenticated';
 
 function App() {
@@ -86,6 +88,7 @@ function App() {
   }
 
   return (
+    {console.log('🎨 APP.TSX - Rendering:', { loading, user: !!user })}
     <ThemeProvider>
       <ThemeApplicator />
       <div className="min-h-screen transition-colors duration-500 bg-background text-text-primary">
