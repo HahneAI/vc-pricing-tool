@@ -10,7 +10,7 @@ import { ThemeApplicator } from './components/ThemeApplicator';
 type AppState = 'loading' | 'login' | 'onboarding' | 'confirmation' | 'authenticated';
 
 function App() {
-  const { user, loading, validateBetaCode, registerBetaUser, signInBetaUser } = useAuth();
+  const { user, loading, validateBetaCode, registerBetaUser, signInBetaUser, completeRegistration } = useAuth();
   const [appState, setAppState] = useState<AppState>('loading');
   const [validBetaCode, setValidBetaCode] = useState<string>('');
   const [betaCodeId, setBetaCodeId] = useState<number>(0);
@@ -57,11 +57,12 @@ function App() {
     
     const result = await registerBetaUser(userData, validBetaCode, betaCodeId);
     
-    if (result.success) {
+    if (result.success && result.userData) {
       setNewUserData({
         firstName: userData.firstName,
         betaCodeId: betaCodeId,
-        jobTitle: userData.jobTitle
+        jobTitle: userData.jobTitle,
+        fullUserData: result.userData
       });
       setAppState('confirmation');
     } else {
@@ -72,7 +73,10 @@ function App() {
 
   // Handle confirmation completion (proceed to app)
   const handleConfirmationComplete = () => {
-    setAppState('authenticated');
+    if (newUserData && newUserData.fullUserData) {
+      completeRegistration(newUserData.fullUserData);
+      setAppState('authenticated');
+    }
   };
 
   // Show loading screen while auth is initializing
