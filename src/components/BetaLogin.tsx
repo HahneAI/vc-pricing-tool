@@ -98,9 +98,9 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
   setError('');
 
   try {
-    onExistingUser(firstName, betaCodeId);
+    await onExistingUser(firstName, betaCodeId);  // <-- Add await here!
   } catch (error) {
-    setError('login failed... did you get your beta code?');  // <-- Updated message
+    setError('login failed... did you get your beta code?');  // <-- Your custom message
   } finally {
     setLoading(false);
   }
