@@ -89,22 +89,22 @@ const BetaLogin: React.FC<BetaLoginProps> = ({ onValidCode, onExistingUser }) =>
   };
 
   const handleExistingUserLogin = async () => {
-    if (!firstName || !betaCodeId) {
-      setError('Please enter both first name and key number');
-      return;
-    }
+  if (!firstName || !betaCodeId) {
+    setError('Please enter both first name and key number');
+    return;
+  }
 
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    try {
-      onExistingUser(firstName, betaCodeId);
-    } catch (error) {
-      setError('Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    onExistingUser(firstName, betaCodeId);
+  } catch (error) {
+    setError('login failed... did you get your beta code?');  // <-- Updated message
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
