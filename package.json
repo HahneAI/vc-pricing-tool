@@ -12,6 +12,8 @@
     "tunnel": "ngrok http 3001"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "lucide-react": "^0.344.0",
