@@ -1,29 +1,52 @@
 import { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import Login from './pages/auth/Login.tsx';
+import Register from './pages/auth/Register.tsx';
 import ChatInterface from './components/ChatInterface';
-import LoadingScreen from './components/ui/LoadingScreen';
+import NotFound from './pages/NotFound.tsx';
+import MobileTimeEntry from './pages/mobile/TimeEntry.tsx';
+import MobileJobView from './pages/mobile/JobView.tsx';
+import MobileDashboard from './pages/mobile/MobileDashboard.tsx';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoadingScreen from './components/common/LoadingScreen';
 import { ThemeProvider } from './context/ThemeContext';
-import { getCoreConfig } from './config/industry';
-import { useAppLoading } from './utils/loading-manager';
 import { ThemeApplicator } from './components/ThemeApplicator';
 
-const coreConfig = getCoreConfig();
-
 function App() {
-  const isAppLoading = useAppLoading({ duration: 2000 });
-
+  const { loading } = useAuth();
+  
   useEffect(() => {
-    document.title = `${coreConfig.companyName} - AI Assistant`;
+    document.title = 'TradeSphere - AI Pricing Assistant';
   }, []);
-
-  if (isAppLoading) {
+  
+  if (loading) {
     return <LoadingScreen />;
   }
-
+  
   return (
     <ThemeProvider>
       <ThemeApplicator />
       <div className="min-h-screen transition-colors duration-500 bg-background text-text-primary">
-        <ChatInterface />
+        <Routes>
+          {/* Auth Routes - Hidden but kept for Task 5 */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/register" element={<Navigate to="/" replace />} />
+          
+          {/* Main Chat Interface (Protected with auto-login) */}
+          <Route path="/" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
+          
+          {/* Mobile Routes (Keep for future mobile version) */}
+          <Route path="/mobile/dashboard" element={<ProtectedRoute><MobileDashboard /></ProtectedRoute>} />
+          <Route path="/mobile/time-entry" element={<ProtectedRoute><MobileTimeEntry /></ProtectedRoute>} />
+          <Route path="/mobile/job/:id" element={<ProtectedRoute><MobileJobView /></ProtectedRoute>} />
+          
+          {/* Redirect old CRM routes */}
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/quotes" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </div>
     </ThemeProvider>
   );
