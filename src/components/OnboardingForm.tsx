@@ -3,10 +3,10 @@ import { User, Briefcase, Mail, Key, CheckCircle, AlertCircle } from 'lucide-rea
 
 interface OnboardingFormProps {
   betaCode: string;
-  betaCodeId: number; // Add beta code ID
+  betaCodeId: number;
   onComplete: (userData: {
     email: string;
-    firstName: string; // Change to firstName
+    firstName: string;
     fullName: string;
     jobTitle: string;
   }) => void;
@@ -103,7 +103,7 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, o
       
       if (existingUsers.length > 0) {
         setError('An account with this email already exists');
-        setStep(1); // Go back to step 1 to change email
+        setStep(1);
         return;
       }
 
@@ -174,7 +174,7 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, o
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="your.email@company.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                   disabled={loading}
                 />
               </div>
@@ -191,7 +191,7 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, o
                   value={formData.firstName}
                   onChange={handleInputChange}
                   placeholder="John"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-500 mt-1">This will be your username to login</p>
@@ -209,7 +209,7 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, o
                   value={formData.fullName}
                   onChange={handleInputChange}
                   placeholder="John Smith"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                   disabled={loading}
                 />
               </div>
@@ -232,12 +232,12 @@ const OnboardingForm: React.FC<OnboardingFormProps> = ({ betaCode, betaCodeId, o
                   name="jobTitle"
                   value={formData.jobTitle}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
                   disabled={loading}
                 >
-                  <option value="">Select your role...</option>
+                  <option value="" className="text-gray-500">Select your role...</option>
                   {jobTitleOptions.map((title) => (
-                    <option key={title} value={title}>{title}</option>
+                    <option key={title} value={title} className="text-gray-900">{title}</option>
                   ))}
                 </select>
               </div>
