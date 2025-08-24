@@ -176,6 +176,20 @@ const ChatInterface = () => {
   }
 }, [user]); // React to user changes
 
+  // ⭐ Casual welcome message fix
+useEffect(() => {
+  if (user && messages.length === 1 && !messages[0].text.includes(user.first_name)) {
+    setMessages([{
+      id: '1',
+      text: `Hey ${user.first_name}, what's the customer scoop?`,
+      sender: 'ai',
+      timestamp: new Date(),
+      sessionId: sessionIdRef.current
+    }]);
+    console.log('✅ Personalized initial welcome for:', user.first_name);
+  }
+}, [user]);
+
   const handleRefreshChat = () => {
   if (!user) {
     console.error("Cannot refresh chat - no user logged in");
@@ -187,7 +201,7 @@ const ChatInterface = () => {
 
   // Reset messages to initial welcome message with user's name
   const personalizedWelcome = user.first_name 
-    ? `Hi ${user.first_name}! Let's make some profit. What are we working on today?`
+    ? `Hey ${user.first_name}, what's the customer scoop?`
     : welcomeMessage;
 
   setMessages([{
