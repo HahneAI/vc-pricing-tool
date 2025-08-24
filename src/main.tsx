@@ -7,6 +7,8 @@ import './styles/theme.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 
+console.log('🟢 MAIN.TSX - React app starting...');
+
 const registerPWA = async () => {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     try {
@@ -27,6 +29,8 @@ const registerPWA = async () => {
     }
   }
 };
+
+console.log('🟢 MAIN.TSX - Rendering App component');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
