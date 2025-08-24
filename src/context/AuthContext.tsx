@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import * as bcrypt from 'bcryptjs'; // You'll need to install this: npm install bcryptjs @types/bcryptjs
 
 interface BetaUser {
   id: string;
   email: string;
+  first_name: string;
   full_name: string;
   job_title: string;
   tech_uuid: string;
   beta_code_used: string;
+  beta_code_id: number;
   is_active: boolean;
   created_at: string;
 }
@@ -18,11 +19,11 @@ interface AuthContextType {
   validateBetaCode: (code: string) => Promise<{ valid: boolean; error?: string }>;
   registerBetaUser: (userData: {
     email: string;
+    firstName: string;
     fullName: string;
     jobTitle: string;
-    password: string;
-  }, betaCode: string) => Promise<{ success: boolean; error?: string }>;
-  signInBetaUser: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  }, betaCode: string, betaCodeId: number) => Promise<{ success: boolean; error?: string }>;
+  signInBetaUser: (firstName: string, betaCodeId: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => void;
 }
 
@@ -99,11 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerBetaUser = async (
     userData: {
       email: string;
+      firstName: string;
       fullName: string;
       jobTitle: string;
-      password: string;
     },
-    betaCode: string
+    betaCode: string,
+    betaCodeId: number
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       // First, validate the beta code again
@@ -111,9 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!codeValidation.valid) {
         return { success: false, error: codeValidation.error };
       }
-
-      // Hash the password
-      const passwordHash = await bcrypt.hash(userData.password, 10);
 
       // Create the user
       const createUserResponse = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
@@ -126,10 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           email: userData.email,
+          first_name: userData.firstName,
           full_name: userData.fullName,
           job_title: userData.jobTitle,
-          password_hash: passwordHash,
-          beta_code_used: betaCode
+          beta_code_used: betaCode,
+          beta_code_id: betaCodeId
         })
       });
 
@@ -172,10 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInBetaUser = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const signInBetaUser = async (firstName: string, betaCodeId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Find user by email
-      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?email=eq.${email}`, {
+      // Find user by first name and beta code id
+      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users?first_name=eq.${firstName}&beta_code_id=eq.${betaCodeId}`, {
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           'apikey': supabaseKey,
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const users = await response.json();
       
       if (users.length === 0) {
-        return { success: false, error: 'Account not found' };
+        return { success: false, error: 'Invalid username or password' };
       }
 
       const userAccount = users[0];
@@ -200,15 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Account is deactivated' };
       }
 
-      // Verify password
-      const passwordMatch = await bcrypt.compare(password, userAccount.password_hash);
-      if (!passwordMatch) {
-        return { success: false, error: 'Invalid password' };
-      }
-
-      // Remove password hash from user object before storing
-      const { password_hash, ...safeUser } = userAccount;
-      const betaUser = safeUser as BetaUser;
+      const betaUser = userAccount as BetaUser;
 
       // Set user in state and localStorage
       setUser(betaUser);
