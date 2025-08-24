@@ -7,7 +7,7 @@ import LoadingScreen from './components/ui/LoadingScreen';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeApplicator } from './components/ThemeApplicator';
 
-type AppState = 'loading' | 'login' | 'onboarding' | 'authenticated';
+type AppState = 'loading' | 'login' | 'onboarding' | 'confirmation' | 'authenticated';
 
 function App() {
   const { user, loading, validateBetaCode, registerBetaUser, signInBetaUser } = useAuth();
@@ -15,6 +15,7 @@ function App() {
   const [validBetaCode, setValidBetaCode] = useState<string>('');
   const [betaCodeId, setBetaCodeId] = useState<number>(0);
   const [registrationError, setRegistrationError] = useState('');
+  const [newUserData, setNewUserData] = useState<any>(null);
 
   useEffect(() => {
     document.title = 'TradeSphere - AI Pricing Assistant';
@@ -48,21 +49,30 @@ function App() {
 
   // Handle onboarding completion
   const handleOnboardingComplete = async (userData: {
-    email: string;
     firstName: string;
-    fullName: string;
     jobTitle: string;
+    email: string;
   }) => {
     setRegistrationError('');
     
     const result = await registerBetaUser(userData, validBetaCode, betaCodeId);
     
     if (result.success) {
-      setAppState('authenticated');
+      setNewUserData({
+        firstName: userData.firstName,
+        betaCodeId: betaCodeId,
+        jobTitle: userData.jobTitle
+      });
+      setAppState('confirmation');
     } else {
       setRegistrationError(result.error || 'Registration failed');
       console.error('Registration failed:', result.error);
     }
+  };
+
+  // Handle confirmation completion (proceed to app)
+  const handleConfirmationComplete = () => {
+    setAppState('authenticated');
   };
 
   // Show loading screen while auth is initializing
@@ -99,6 +109,50 @@ function App() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {appState === 'confirmation' && newUserData && (
+          <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
+              <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Account Created Successfully!</h1>
+              <p className="text-gray-600 mb-6">Welcome to TradeSphere, {newUserData.firstName}!</p>
+              
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
+                <h2 className="text-sm font-medium text-blue-800 mb-3">Your Login Credentials:</h2>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Username:</span>
+                    <span className="font-mono text-blue-900 font-semibold">{newUserData.firstName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Password:</span>
+                    <span className="font-mono text-blue-900 font-semibold">{newUserData.betaCodeId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Role:</span>
+                    <span className="text-blue-900">{newUserData.jobTitle}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 mb-6">
+                Save these credentials - you'll need them to log back in later.
+              </p>
+
+              <button
+                onClick={handleConfirmationComplete}
+                className="w-full py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              >
+                "Yes, I wrote my number down"
+              </button>
+            </div>
           </div>
         )}
         
