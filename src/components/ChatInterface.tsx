@@ -30,8 +30,22 @@ const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth(); // Already importing useAuth - now we use user data!
   const visualConfig = getSmartVisualThemeConfig(theme);
+
+  const generateSessionId = () => {
+  if (!user) {
+    console.warn("No user context for session generation, using basic session ID");
+    return `quote_session_${Date.now()}`;
+  }
   
-  const sessionIdRef = useRef<string>(`quote_session_${Date.now()}`);
+  // Include user context in session ID for better tracking
+  const userPrefix = user.first_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const betaId = user.beta_code_id;
+  const timestamp = Date.now();
+  
+  return `quote_session_${userPrefix}_${betaId}_${timestamp}`;
+};
+  
+  const sessionIdRef = useRef<string>(generateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastPollTimeRef = useRef<Date>(new Date());
   const sendButtonRef = useRef<HTMLButtonElement>(null);
@@ -155,19 +169,41 @@ const ChatInterface = () => {
   }, [messages]);
 
   const handleRefreshChat = () => {
-    sessionIdRef.current = `quote_session_${Date.now()}`;
-    setMessages([{
-      id: '1',
-      text: welcomeMessage,
-      sender: 'ai',
-      timestamp: new Date(),
-      sessionId: sessionIdRef.current
-    }]);
-    setIsLoading(false);
-    setInputText('');
-    lastPollTimeRef.current = new Date();
-    console.log('🔄 Chat refreshed with new session:', sessionIdRef.current);
-  };
+  if (!user) {
+    console.error("Cannot refresh chat - no user logged in");
+    return;
+  }
+
+  // Generate new user-contextual session ID
+  sessionIdRef.current = generateSessionId();
+
+  // Reset messages to initial welcome message with user's name
+  const personalizedWelcome = user.first_name 
+    ? `Hi ${user.first_name}! Let's make some profit. What are we working on today?`
+    : welcomeMessage;
+
+  setMessages([{
+    id: '1',
+    text: personalizedWelcome,
+    sender: 'ai',
+    timestamp: new Date(),
+    sessionId: sessionIdRef.current
+  }]);
+
+  // Clear any loading states
+  setIsLoading(false);
+  setInputText('');
+
+  // Reset polling timestamp
+  lastPollTimeRef.current = new Date();
+
+  console.log('🔄 Chat refreshed with new user session:', sessionIdRef.current);
+  console.log('👤 User context:', { 
+    name: user.first_name, 
+    betaId: user.beta_code_id,
+    techId: user.tech_uuid 
+  });
+};
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
