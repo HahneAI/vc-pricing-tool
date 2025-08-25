@@ -197,3 +197,30 @@
 .animate-screen-out {
   animation: screen-out 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* === MOBILE HAMBURGER MENU ANIMATIONS === */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-overlay-fade-in {
+  animation: overlay-fade-in 0.3s ease-in-out forwards;
+}

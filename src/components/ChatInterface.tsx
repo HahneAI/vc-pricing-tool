@@ -19,6 +19,7 @@ import { ThemeAwareAvatar } from './ui/ThemeAwareAvatar';
 import { FeedbackPopup } from './ui/FeedbackPopup';
 import { sendFeedback } from '../utils/feedback-webhook';
 import { Message } from '../types/job';
+import { MobileHamburgerMenu } from './mobile/MobileHamburgerMenu';
 
 const coreConfig = getCoreConfig();
 const terminologyConfig = getTerminologyConfig();
@@ -79,13 +80,18 @@ const ChatInterface = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const MAKE_WEBHOOK_URL = coreConfig.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
   const handleLogout = () => {
-    signOut();
+    setShowLogoutModal(true);
   };
+
+  const confirmLogout = () => {
+    signOut();
+  }
 
   // 🏢 ENTERPRISE: Enhanced sendUserMessageToMake with performance tracking
   const sendUserMessageToMake = async (userMessageText: string) => {
@@ -311,81 +317,63 @@ const ChatInterface = () => {
   const handleFeedbackSubmit = async (feedbackText: string) => {
     try {
       await sendFeedback(user?.first_name || 'Anonymous', feedbackText);
-      // The popup will show a success message and close itself.
+      setShowFeedbackPopup(false);
     } catch (error) {
       console.error("Failed to send feedback from chat interface", error);
-      // You could also trigger a more user-facing error message here
     }
   };
 
   // ORIGINAL: Exact same return structure - preserving 100% of working layout
   return (
     <div className="h-screen flex flex-col overflow-hidden transition-colors duration-500" style={{ backgroundColor: visualConfig.colors.background }}>
-      {/* ORIGINAL: Header structure preserved exactly */}
+      <MobileHamburgerMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onLogoutClick={handleLogout}
+        onFeedbackClick={() => setShowFeedbackPopup(true)}
+        visualConfig={visualConfig}
+        theme={theme}
+        user={user}
+      />
       <header className="flex-shrink-0 border-b transition-colors duration-300" style={{ borderBottomColor: theme === 'light' ? '#e5e7eb' : '#374151', backgroundColor: visualConfig.colors.surface }}>
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
-            {/* ORIGINAL: Logo and Company Info - exact same structure */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                {coreConfig.logoUrl ? (
-                  <img src={coreConfig.logoUrl} alt={`${coreConfig.companyName} Logo`} className='h-10 w-auto' />
-                ) : (
-                  <DynamicIcon
-                    name={coreConfig.headerIcon}
-                    className="h-8 w-8"
-                    style={{ color: visualConfig.colors.text.onPrimary }}
-                  />
-                )}
-              </div>
-              <div>
-                <h1
-                  className="text-2xl font-bold"
-                  style={{ color: visualConfig.colors.text.primary }}
-                >
-                  {coreConfig.companyName}
-                </h1>
-                <p
-                  className="text-sm"
-                  style={{ color: visualConfig.colors.text.secondary }}
-                >
-                  {terminologyConfig.businessType}
-                </p>
+            {/* Left side: Hamburger, Logo */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsMenuOpen(true)}
+                className="md:hidden p-2 rounded-md transition-colors"
+                style={{ color: visualConfig.colors.text.secondary }}
+                aria-label="Open menu"
+              >
+                <Icons.Menu className="h-6 w-6" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {coreConfig.logoUrl ? (
+                    <img src={coreConfig.logoUrl} alt={`${coreConfig.companyName} Logo`} className='h-9 w-auto' />
+                  ) : (
+                    <DynamicIcon
+                      name={coreConfig.headerIcon}
+                      className="h-8 w-8"
+                      style={{ color: visualConfig.colors.text.onPrimary }}
+                    />
+                  )}
+                </div>
+                <div className="hidden sm:block">
+                  <h1 className="text-xl font-bold" style={{ color: visualConfig.colors.text.primary }}>
+                    {coreConfig.companyName}
+                  </h1>
+                </div>
               </div>
             </div>
 
-            {/* ORIGINAL: Controls section preserved exactly */}
-            <div className="flex items-center space-x-3">
-              {/* ORIGINAL: User Avatar with Name Tag */}
-              <div className="relative">
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-200 hover:shadow-lg"
-                  style={{
-                    backgroundColor: visualConfig.colors.primary,
-                    color: visualConfig.colors.text.onPrimary,
-                  }}
-                >
-                  <DynamicIcon name="User" className="h-5 w-5" />
-                </div>
-    
-                <div 
-                  className="absolute -bottom-2 -right-1 px-2 py-1 text-xs font-medium rounded-full shadow-lg border transition-all duration-200"
-                  style={{
-                    backgroundColor: visualConfig.colors.surface,
-                    color: visualConfig.colors.text.primary,
-                    borderColor: theme === 'light' ? '#e5e7eb' : '#374151',
-                    fontSize: '0.65rem'
-                  }}
-                >
-                  {user?.first_name || 'User'}
-                </div>
-              </div>
-
-              {/* ORIGINAL: Refresh Button */}
+            {/* Right side: Controls */}
+            <div className="flex items-center space-x-2">
               <button
                 ref={refreshButtonRef}
                 onClick={handleRefreshChat}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
                 style={{
                   backgroundColor: visualConfig.colors.primary,
                   color: visualConfig.colors.text.onPrimary,
@@ -394,39 +382,31 @@ const ChatInterface = () => {
                 title="Start a new chat session"
               >
                 <DynamicIcon name="RotateCcw" className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">New Chat</span>
+                <span className="hidden sm:inline text-sm font-medium">New Chat</span>
               </button>
 
-              {/* 🎯 NEW: Admin Performance Toggle */}
               {isAdmin && (
                 <button
                   onClick={() => setShowPerformancePanel(!showPerformancePanel)}
-                  className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="p-2 rounded-lg transition-all duration-200 hover:shadow-sm"
                   style={{
-                    backgroundColor: showPerformancePanel ? visualConfig.colors.primary : (theme === 'light' ? '#f3f4f6' : '#374151'),
+                    backgroundColor: showPerformancePanel ? visualConfig.colors.primary : 'transparent',
                     color: showPerformancePanel ? visualConfig.colors.text.onPrimary : visualConfig.colors.text.secondary
                   }}
                   aria-label="Toggle performance panel"
                   title="Toggle performance monitoring"
                 >
-                  <Icons.Activity className="h-6 w-6" />
+                  <Icons.Activity className="h-5 w-5" />
                 </button>
               )}
 
-              {/* ORIGINAL: Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{
-                  backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-                  color: visualConfig.colors.text.secondary
-                }}
+                className="p-2 rounded-lg transition-all duration-200 hover:shadow-sm"
+                style={{ color: visualConfig.colors.text.secondary }}
                 aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
-                {theme === 'dark' ?
-                  <Icons.Sun className="h-6 w-6" /> :
-                  <Icons.Moon className="h-6 w-6" />
-                }
+                {theme === 'dark' ? <Icons.Sun className="h-5 w-5" /> : <Icons.Moon className="h-5 w-5" />}
               </button>
             </div>
           </div>
@@ -528,30 +508,28 @@ const ChatInterface = () => {
         </div>
       </main>
 
-      {/* ORIGINAL: Logout Button - exact same */}
-      {/* Feedback Button */}
-      <button
-        onClick={() => setShowFeedbackPopup(true)}
-        className="fixed bottom-6 left-6 px-5 py-3 shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 z-50 flex items-center justify-center gap-2"
-        style={{
-          backgroundColor: visualConfig.colors.primary,
-          color: visualConfig.colors.text.onPrimary,
-          '--tw-ring-color': visualConfig.colors.primary,
-          borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
-        }}
-        title="Send Feedback"
-      >
-        <Icons.MessageSquareQuote className="h-5 w-5" />
-        <span className="hidden sm:inline font-semibold">Send Feedback</span>
-      </button>
-
-      <button
-        onClick={() => setShowLogoutModal(true)}
-        className="fixed bottom-6 right-6 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-red-300 z-50"
-        title="Logout"
-      >
-        <Icons.LogOut className="h-6 w-6" />
-      </button>
+      {/* Footer for User Avatar */}
+      <footer className="hidden md:block fixed bottom-4 left-4 z-10">
+        <div className="flex items-center space-x-3">
+            <div
+              className="flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-200 hover:shadow-lg"
+              style={{
+                backgroundColor: visualConfig.colors.primary,
+                color: visualConfig.colors.text.onPrimary,
+              }}
+            >
+              <DynamicIcon name="User" className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm" style={{ color: visualConfig.colors.text.primary }}>
+                {user?.first_name || 'User'}
+              </p>
+              <p className="text-xs" style={{ color: visualConfig.colors.text.secondary }}>
+                {user?.job_title || 'Technician'}
+              </p>
+            </div>
+          </div>
+      </footer>
 
       {/* Feedback Popup */}
       <FeedbackPopup
@@ -561,27 +539,33 @@ const ChatInterface = () => {
         userName={user?.first_name || 'Anonymous'}
       />
 
-      {/* ORIGINAL: Logout Modal - exact same */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-2xl animate-scale-in">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fade-in">
+          <div
+            className="rounded-xl p-6 max-w-sm mx-4 shadow-2xl animate-scale-in"
+            style={{ backgroundColor: visualConfig.colors.surface }}
+          >
             <div className="text-center">
-              <Icons.AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <Icons.AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2" style={{ color: visualConfig.colors.text.primary }}>
                 Confirm Logout
               </h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to logout? Your current chat session will be lost.
+              <p className="mb-6" style={{ color: visualConfig.colors.text.secondary }}>
+                Are you sure you want to logout?
               </p>
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="flex-1 py-2 px-4 rounded-lg transition-colors"
+                  style={{
+                    backgroundColor: theme === 'light' ? '#e5e7eb' : '#374151',
+                    color: visualConfig.colors.text.primary
+                  }}
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleLogout}
+                  onClick={confirmLogout}
                   className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Logout
