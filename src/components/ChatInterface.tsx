@@ -16,6 +16,8 @@ import { triggerSendEffect } from './ui/IndustryEffects';
 import TypingIndicator from './ui/TypingIndicator';
 import { ThemeAwareMessageBubble } from './ui/ThemeAwareMessageBubble';
 import { ThemeAwareAvatar } from './ui/ThemeAwareAvatar';
+import { FeedbackPopup } from './ui/FeedbackPopup';
+import { sendFeedback } from '../utils/feedback-webhook';
 import { Message } from '../types/job';
 
 const coreConfig = getCoreConfig();
@@ -76,6 +78,7 @@ const ChatInterface = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
 
   const MAKE_WEBHOOK_URL = coreConfig.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
@@ -305,6 +308,16 @@ const ChatInterface = () => {
     }
   };
 
+  const handleFeedbackSubmit = async (feedbackText: string) => {
+    try {
+      await sendFeedback(user?.first_name || 'Anonymous', feedbackText);
+      // The popup will show a success message and close itself.
+    } catch (error) {
+      console.error("Failed to send feedback from chat interface", error);
+      // You could also trigger a more user-facing error message here
+    }
+  };
+
   // ORIGINAL: Exact same return structure - preserving 100% of working layout
   return (
     <div className="h-screen flex flex-col overflow-hidden transition-colors duration-500" style={{ backgroundColor: visualConfig.colors.background }}>
@@ -516,6 +529,20 @@ const ChatInterface = () => {
       </main>
 
       {/* ORIGINAL: Logout Button - exact same */}
+      {/* Feedback Button */}
+      <button
+        onClick={() => setShowFeedbackPopup(true)}
+        className="fixed bottom-6 left-6 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 z-50"
+        style={{
+          backgroundColor: visualConfig.colors.primary,
+          color: visualConfig.colors.text.onPrimary,
+          '--tw-ring-color': visualConfig.colors.primary,
+        }}
+        title="Submit Feedback"
+      >
+        <Icons.MessageSquareQuote className="h-6 w-6" />
+      </button>
+
       <button
         onClick={() => setShowLogoutModal(true)}
         className="fixed bottom-6 right-6 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-red-300 z-50"
@@ -523,6 +550,14 @@ const ChatInterface = () => {
       >
         <Icons.LogOut className="h-6 w-6" />
       </button>
+
+      {/* Feedback Popup */}
+      <FeedbackPopup
+        isOpen={showFeedbackPopup}
+        onClose={() => setShowFeedbackPopup(false)}
+        onSubmit={handleFeedbackSubmit}
+        userName={user?.first_name || 'Anonymous'}
+      />
 
       {/* ORIGINAL: Logout Modal - exact same */}
       {showLogoutModal && (
