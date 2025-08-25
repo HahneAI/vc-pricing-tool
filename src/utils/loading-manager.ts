@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const LOADING_DURATION = 300; // 300ms intentional delay
+const LOADING_DURATION = 800; // 800ms intentional delay
 
 interface LoadingConfig {
   duration?: number;
