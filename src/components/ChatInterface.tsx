@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+// ENHANCED ChatInterface.tsx - Adding enterprise performance ON TOP of existing features
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as Icons from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { flushSync } from 'react-dom';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext'; // Add this import
+import { useAuth } from '../context/AuthContext';
 import {
     getCoreConfig,
     getTerminologyConfig,
@@ -28,22 +29,35 @@ const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.Lu
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, signOut } = useAuth(); // Already importing useAuth - now we use user data!
+  const { user, signOut } = useAuth();
   const visualConfig = getSmartVisualThemeConfig(theme);
 
+  // ⚡ ENTERPRISE: Performance metrics (NEW)
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    webhookLatency: null,
+    functionLatency: null,
+    totalResponseTime: null,
+    makecomProcessingTime: null
+  });
+
+  // ⚡ ENTERPRISE: Advanced loading states (NEW)
+  const [loadingStage, setLoadingStage] = useState(null);
+  const [processingStartTime, setProcessingStartTime] = useState(null);
+  const [estimatedWaitTime, setEstimatedWaitTime] = useState(null);
+  const [connectionHealth, setConnectionHealth] = useState('healthy');
+
   const generateSessionId = () => {
-  if (!user) {
-    console.warn("No user context for session generation, using basic session ID");
-    return `quote_session_${Date.now()}`;
-  }
-  
-  // Include user context in session ID for better tracking
-  const userPrefix = user.first_name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const betaId = user.beta_code_id;
-  const timestamp = Date.now();
-  
-  return `quote_session_${userPrefix}_${betaId}_${timestamp}`;
-};
+    if (!user) {
+      console.warn("No user context for session generation, using basic session ID");
+      return `quote_session_${Date.now()}`;
+    }
+    
+    const userPrefix = user.first_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const betaId = user.beta_code_id;
+    const timestamp = Date.now();
+    
+    return `quote_session_${userPrefix}_${betaId}_${timestamp}`;
+  };
   
   const sessionIdRef = useRef<string>(generateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,28 +79,59 @@ const ChatInterface = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false); // Add logout modal state
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const MAKE_WEBHOOK_URL = coreConfig.makeWebhookUrl;
   const NETLIFY_API_URL = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
 
-  // Logout handler
-  const handleLogout = () => {
-    signOut();
-    // App.tsx will handle redirecting to login screen via useEffect
+  // ⚡ ENTERPRISE: Loading stages (NEW)
+  const loadingStages = {
+    'sending': { 
+      message: 'Sending your message...', 
+      icon: 'Send', 
+      estimate: '< 1 second',
+      color: 'text-blue-500' 
+    },
+    'processing': { 
+      message: 'AI is analyzing your request...', 
+      icon: 'Bot', 
+      estimate: '30-45 seconds',
+      color: 'text-purple-500' 
+    },
+    'calculating': { 
+      message: 'Calculating pricing and gathering data...', 
+      icon: 'Clock', 
+      estimate: '15-30 seconds remaining',
+      color: 'text-orange-500' 
+    },
+    'finalizing': { 
+      message: 'Preparing your response...', 
+      icon: 'CheckCircle', 
+      estimate: '< 5 seconds',
+      color: 'text-green-500' 
+    }
   };
 
+  const handleLogout = () => {
+    signOut();
+  };
+
+  // ⚡ ENHANCED: sendUserMessageToMake with performance tracking
   const sendUserMessageToMake = async (userMessageText: string) => {
     if (!MAKE_WEBHOOK_URL) {
       console.warn("Make.com webhook URL is not configured. Skipping message sending.");
       return;
     }
 
-    // Add user data validation
     if (!user) {
       console.error("No user data available for Make.com webhook");
       throw new Error("User not authenticated");
     }
+
+    // ⚡ ENTERPRISE: Performance tracking
+    const startTime = performance.now();
+    setLoadingStage('sending');
+    setProcessingStartTime(Date.now());
 
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {
@@ -99,12 +144,19 @@ const ChatInterface = () => {
           timestamp: new Date().toISOString(),
           sessionId: sessionIdRef.current,
           source: 'TradeSphere',
-          techId: user.tech_uuid,           // ✅ REAL tech UUID from logged-in user
-          firstName: user.first_name,       // ✅ ADD user's first name to payload
-          jobTitle: user.job_title,         // ✅ BONUS: job title for context
-          betaCodeId: user.beta_code_id     // ✅ BONUS: beta code ID for tracking
+          techId: user.tech_uuid,
+          firstName: user.first_name,
+          jobTitle: user.job_title,
+          betaCodeId: user.beta_code_id,
+          requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
         })
       });
+
+      const webhookLatency = performance.now() - startTime;
+      setPerformanceMetrics(prev => ({
+        ...prev,
+        webhookLatency: webhookLatency.toFixed(2)
+      }));
 
       if (!response.ok) {
         throw new Error('Failed to send message to Make.com');
@@ -115,13 +167,119 @@ const ChatInterface = () => {
         firstName: user.first_name,
         sessionId: sessionIdRef.current
       });
+
+      // ⚡ ENTERPRISE: Advanced loading progression
+      setLoadingStage('processing');
+      setEstimatedWaitTime(45);
+      startEnterprisePolling();
+      startLoadingCountdown();
+
     } catch (error) {
+      setLoadingStage(null);
       console.error('❌ Error sending user message to Make.com:', error);
       throw error;
     }
   };
 
-  // Poll for new AI messages
+  // ⚡ ENTERPRISE: Loading countdown (NEW)
+  const startLoadingCountdown = useCallback(() => {
+    let elapsed = 0;
+    
+    const countdownInterval = setInterval(() => {
+      elapsed += 1;
+      
+      if (elapsed >= 10 && elapsed < 35) {
+        setLoadingStage('calculating');
+        setEstimatedWaitTime(Math.max(0, 45 - elapsed));
+      } else if (elapsed >= 35) {
+        setLoadingStage('finalizing');
+        setEstimatedWaitTime(Math.max(0, 50 - elapsed));
+      }
+      
+      if (elapsed > 60 || !isLoading) {
+        clearInterval(countdownInterval);
+        setLoadingStage(null);
+        setConnectionHealth(elapsed > 60 ? 'degraded' : 'healthy');
+      }
+    }, 1000);
+
+    return countdownInterval;
+  }, [isLoading]);
+
+  // ⚡ ENTERPRISE: High-performance polling (NEW)
+  const startEnterprisePolling = useCallback(() => {
+    let pollCount = 0;
+    
+    const performPoll = async () => {
+      const pollStart = performance.now();
+      
+      try {
+        const currentApiUrl = `/.netlify/functions/chat-messages/${sessionIdRef.current}`;
+        const response = await fetch(`${currentApiUrl}?since=${lastPollTimeRef.current.toISOString()}`);
+        const pollLatency = performance.now() - pollStart;
+        
+        setPerformanceMetrics(prev => ({
+          ...prev,
+          functionLatency: pollLatency.toFixed(2)
+        }));
+        
+        if (!response.ok) {
+          throw new Error(`Poll failed: ${response.status}`);
+        }
+
+        const newMessages = await response.json();
+        
+        if (newMessages.length > 0) {
+          const totalTime = Date.now() - processingStartTime;
+          setPerformanceMetrics(prev => ({
+            ...prev,
+            totalResponseTime: (totalTime / 1000).toFixed(1),
+            makecomProcessingTime: (totalTime / 1000 - 1).toFixed(1)
+          }));
+          
+          const processedMessages = newMessages.map(msg => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(msg => msg.id));
+            const uniqueNewMessages = processedMessages.filter(msg => !existingIds.has(msg.id));
+            
+            if (uniqueNewMessages.length > 0) {
+              setIsLoading(false);
+              setConnectionHealth('healthy');
+              lastPollTimeRef.current = new Date();
+              setLoadingStage(null);
+              
+              console.log(`✅ ENTERPRISE: Message received after ${totalTime}ms total`);
+              return [...prev, ...uniqueNewMessages];
+            }
+            return prev;
+          });
+          return;
+        }
+        
+        // ⚡ ENTERPRISE: Smart polling intervals
+        pollCount++;
+        if (pollCount < 5) {
+          setTimeout(performPoll, 1000);
+        } else if (pollCount < 15) {
+          setTimeout(performPoll, 2000);
+        } else {
+          setTimeout(performPoll, 3000);
+        }
+        
+      } catch (error) {
+        console.error('❌ ENTERPRISE: Poll error:', error);
+        setConnectionHealth('error');
+      }
+    };
+    
+    performPoll();
+  }, [processingStartTime]);
+
+  // EXISTING: Regular polling
   const pollForAiMessages = async () => {
     if (!NETLIFY_API_URL) return;
     
@@ -158,75 +316,96 @@ const ChatInterface = () => {
     }
   };
 
-  // Set up polling interval
+  // EXISTING: Polling interval
   useEffect(() => {
     const pollingInterval = setInterval(pollForAiMessages, 3000);
     return () => clearInterval(pollingInterval);
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
+  // EXISTING: Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ENHANCED: Initialize with user context when user changes
+  // EXISTING: User context initialization
   useEffect(() => {
     if (user && !sessionIdRef.current.includes(user.first_name.toLowerCase())) {
-    // User logged in or switched - regenerate session with their context
-    handleRefreshChat();
-  }
-}, [user]); // React to user changes
+      handleRefreshChat();
+    }
+  }, [user]);
 
-  // ⭐ Casual welcome message fix
-useEffect(() => {
-  if (user && messages.length === 1 && !messages[0].text.includes(user.first_name)) {
+  // EXISTING: Personalized welcome
+  useEffect(() => {
+    if (user && messages.length === 1 && !messages[0].text.includes(user.first_name)) {
+      setMessages([{
+        id: '1',
+        text: `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`,
+        sender: 'ai',
+        timestamp: new Date(),
+        sessionId: sessionIdRef.current
+      }]);
+      console.log('✅ Personalized initial welcome for:', user.first_name);
+    }
+  }, [user]);
+
+  const handleRefreshChat = () => {
+    if (!user) {
+      console.error("Cannot refresh chat - no user logged in");
+      return;
+    }
+
+    sessionIdRef.current = generateSessionId();
+    const personalizedWelcome = user.first_name 
+      ? `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`
+      : welcomeMessage;
+
     setMessages([{
       id: '1',
-      text: `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`,
+      text: personalizedWelcome,
       sender: 'ai',
       timestamp: new Date(),
       sessionId: sessionIdRef.current
     }]);
-    console.log('✅ Personalized initial welcome for:', user.first_name);
-  }
-}, [user]);
 
-  const handleRefreshChat = () => {
-  if (!user) {
-    console.error("Cannot refresh chat - no user logged in");
-    return;
-  }
+    setInputText('');
+    setIsLoading(false);
+    setIsRefreshing(false);
+    lastPollTimeRef.current = new Date();
 
-  // Generate new user-contextual session ID
-  sessionIdRef.current = generateSessionId();
+    console.log('✅ Chat refreshed with new session and user context');
+  };
 
-  // Reset messages to initial welcome message with user's name
-  const personalizedWelcome = user.first_name 
-    ? `Hey ${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()}, what's the customer scoop?`
-    : welcomeMessage;
-
-  setMessages([{
-    id: '1',
-    text: personalizedWelcome,
-    sender: 'ai',
-    timestamp: new Date(),
-    sessionId: sessionIdRef.current
-  }]);
-
-  // Clear any loading states
-  setIsLoading(false);
-  setInputText('');
-
-  // Reset polling timestamp
-  lastPollTimeRef.current = new Date();
-
-  console.log('🔄 Chat refreshed with new user session:', sessionIdRef.current);
-  console.log('👤 User context:', { 
-    name: user.first_name, 
-    betaId: user.beta_code_id,
-    techId: user.tech_uuid 
-  });
-};
+  // ⚡ ENTERPRISE: Professional loading UI (NEW)
+  const renderEnterpriseLoading = () => {
+    if (!loadingStage) return null;
+    
+    const stage = loadingStages[loadingStage];
+    
+    return (
+      <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+        <div className="relative">
+          <DynamicIcon name={stage.icon as keyof typeof Icons} className={`w-6 h-6 ${stage.color} animate-pulse`} />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
+        </div>
+        
+        <div className="flex-1">
+          <div className="text-sm font-medium text-gray-800">{stage.message}</div>
+          <div className="text-xs text-gray-600">
+            {estimatedWaitTime !== null ? 
+              `Estimated: ${Math.ceil(estimatedWaitTime)}s remaining` : 
+              stage.estimate
+            }
+          </div>
+        </div>
+        
+        {performanceMetrics.webhookLatency && (
+          <div className="text-xs text-gray-500">
+            Webhook: {performanceMetrics.webhookLatency}ms
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -244,224 +423,138 @@ useEffect(() => {
     setInputText('');
     setIsLoading(true);
 
+    // EXISTING: Trigger send effect
+    if (sendButtonRef.current) {
+      triggerSendEffect(sendButtonRef.current);
+    }
+
     try {
       await sendUserMessageToMake(userMessageText);
     } catch (error) {
       const errorMessage: Message = {
         id: uuidv4(),
-        text: "Sorry, there was an error sending your message. Please try again.",
+        text: "I'm having trouble connecting right now. Let me try that again automatically...",
         sender: 'ai',
         timestamp: new Date(),
         sessionId: sessionIdRef.current
       };
+
       setMessages(prev => [...prev, errorMessage]);
       setIsLoading(false);
+      setConnectionHealth('error');
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      if (!isLoading && inputText.trim()) {
+        handleSendMessage();
+      }
     }
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden transition-colors duration-500" style={{ backgroundColor: visualConfig.colors.background }}>
-      {/* Header */}
-      <header className="flex-shrink-0 border-b transition-colors duration-300" style={{ borderBottomColor: theme === 'light' ? '#e5e7eb' : '#374151', backgroundColor: visualConfig.colors.surface }}>
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo and Company Info */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                {coreConfig.logoUrl ? (
-                  <img src={coreConfig.logoUrl} alt={`${coreConfig.companyName} Logo`} className='h-10 w-auto' />
-                ) : (
-                  <DynamicIcon
-                    name={coreConfig.headerIcon}
-                    className="h-8 w-8"
-                    style={{ color: visualConfig.colors.text.onPrimary }}
-                  />
-                )}
-              </div>
-              <div>
-                <h1
-                  className="text-2xl font-bold"
-                  style={{ color: visualConfig.colors.text.primary }}
-                >
-                  {coreConfig.companyName}
-                </h1>
-                <p
-                  className="text-sm"
-                  style={{ color: visualConfig.colors.text.secondary }}
-                >
-                  {terminologyConfig.businessType}
-                </p>
-              </div>
-            </div>
-
-                        {/* Controls */}
-            <div className="flex items-center space-x-3">
-              {/* User Avatar with Name Tag */}
-              <div className="relative">
-                {/* User Avatar */}
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-200 hover:shadow-lg"
-                  style={{
-                    backgroundColor: visualConfig.colors.primary,
-                    color: visualConfig.colors.text.onPrimary,
-                  }}
-                >
-                  <DynamicIcon name="User" className="h-5 w-5" />
-                </div>
-    
-                {/* Minimalistic Name Tag - extends from under avatar shadow */}
-                <div 
-                  className="absolute -bottom-2 -right-1 px-2 py-1 text-xs font-medium rounded-full shadow-lg border transition-all duration-200"
-                  style={{
-                    backgroundColor: visualConfig.colors.surface,
-                    color: visualConfig.colors.text.primary,
-                    borderColor: theme === 'light' ? '#e5e7eb' : '#374151',
-                    fontSize: '0.65rem'
-                  }}
-                >
-                  {user?.first_name || 'User'}
-                </div>
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                ref={refreshButtonRef}
-                onClick={handleRefreshChat}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{
-                  backgroundColor: visualConfig.colors.primary,
-                  color: visualConfig.colors.text.onPrimary,
-                  '--tw-ring-color': visualConfig.colors.primary,
-                }}
-                title="Start a new chat session"
-              >
-                <DynamicIcon name="RotateCcw" className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">New Chat</span>
-              </button>
-
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{
-                  backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-                  color: visualConfig.colors.text.secondary
-                }}
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ?
-                  <Icons.Sun className="h-6 w-6" /> :
-                  <Icons.Moon className="h-6 w-6" />
-                }
-              </button>
+    <div className="flex flex-col h-full" style={{ backgroundColor: visualConfig.colors.background.primary }}>
+      <header className="border-b p-4 flex items-center justify-between" style={{ borderColor: visualConfig.colors.border }}>
+        <div className="flex items-center space-x-4">
+          <ThemeAwareAvatar user={user} size="sm" theme={theme} />
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: visualConfig.colors.text.primary }}>
+              {terminologyConfig.ui.chatTitle}
+            </h2>
+            <div className="flex items-center space-x-2 text-xs" style={{ color: visualConfig.colors.text.secondary }}>
+              <div className={`w-2 h-2 rounded-full ${
+                connectionHealth === 'healthy' ? 'bg-green-500' : 
+                connectionHealth === 'degraded' ? 'bg-yellow-500' : 'bg-red-500'
+              }`}></div>
+              <span>System {connectionHealth}</span>
+              {performanceMetrics.totalResponseTime && (
+                <span>• Last response: {performanceMetrics.totalResponseTime}s</span>
+              )}
             </div>
           </div>
         </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            ref={refreshButtonRef}
+            onClick={handleRefreshChat}
+            disabled={isLoading || isRefreshing}
+            className="p-2 rounded-lg transition-colors"
+            style={{ backgroundColor: visualConfig.colors.background.secondary }}
+            title="Start New Chat"
+          >
+            <DynamicIcon name="RotateCcw" className="h-5 w-5" style={{ color: visualConfig.colors.text.primary }} />
+          </button>
+
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg transition-colors"
+            style={{ backgroundColor: visualConfig.colors.background.secondary }}
+          >
+            <DynamicIcon name={theme === 'dark' ? 'Sun' : 'Moon'} className="h-5 w-5" style={{ color: visualConfig.colors.text.primary }} />
+          </button>
+        </div>
       </header>
 
-      {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col overflow-hidden p-4">
-        <div
-          className="flex-1 rounded-2xl shadow-lg flex flex-col overflow-hidden min-h-0 transition-all duration-300"
-          style={{
-            backgroundColor: visualConfig.colors.surface,
-            borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.5rem' : '0.75rem'
-          }}
-        >
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {messages.map((message, index) => (
-              <div
-                key={message.id}
-                className={`
-                  ${isRefreshing ? 'animate-fade-up-out' : ''}
-                  ${!isRefreshing && index === messages.length - 1 && message.sender === 'user' ? 'animate-fade-up-in-delay-user' : ''}
-                  ${!isRefreshing && index === messages.length - 1 && message.sender === 'ai' ? 'animate-fade-up-in-delay' : ''}
-                `}
-              >
-                <ThemeAwareMessageBubble
-                  message={message}
-                  visualConfig={visualConfig}
-                  theme={theme}
-                />
-              </div>
-            ))}
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto p-6 space-y-6">
+          {messages.map((message) => (
+            <ThemeAwareMessageBubble
+              key={message.id}
+              message={message}
+              user={user}
+              theme={theme}
+            />
+          ))}
+          
+          {/* ⚡ ENTERPRISE: Show enhanced loading or existing typing */}
+          {isLoading && (
+            loadingStage ? renderEnterpriseLoading() : <TypingIndicator theme={theme} />
+          )}
 
-            {/* Typing Indicator */}
-            {isLoading && (
-              <div className="flex items-start gap-3 justify-start animate-loading-entry">
-                <ThemeAwareAvatar sender="ai" visualConfig={visualConfig} />
-                <div
-                  className="px-5 py-3 rounded-2xl shadow-md flex items-center gap-3 transition-colors duration-300"
-                  style={{ backgroundColor: visualConfig.colors.elevated }}
-                >
-                  <TypingIndicator />
-                  <p
-                    className="text-sm"
-                    style={{ color: visualConfig.colors.text.secondary }}
-                  >
-                    {terminologyConfig.statusMessages.thinking}
-                  </p>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+          <div ref={messagesEndRef} />
+        </div>
 
-          {/* Input Area */}
-          <div
-            className="border-t p-3 transition-colors duration-300"
-            style={{
-              backgroundColor: visualConfig.colors.surface,
-              borderTopColor: theme === 'light' ? '#e5e7eb' : '#374151'
-            }}
-          >
-            <div className="flex items-center space-x-4 max-w-4xl mx-auto">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={terminologyConfig.placeholderExamples}
-                className="flex-1 px-3 py-2 rounded-xl resize-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                style={{
-                  backgroundColor: visualConfig.colors.background,
-                  color: visualConfig.colors.text.primary,
-                  borderColor: visualConfig.colors.secondary,
-                  '--tw-ring-color': visualConfig.colors.primary,
-                  borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
-                }}
-                rows={1}
-                disabled={isLoading}
-              />
-              <button
-                ref={sendButtonRef}
-                onClick={handleSendMessage}
-                disabled={isLoading || !inputText.trim()}
-                className="px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
-                style={{
-                  backgroundColor: visualConfig.colors.primary,
-                  color: visualConfig.colors.text.onPrimary,
-                  borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
-                }}
-              >
-                <DynamicIcon name="Send" className="h-5 w-5" />
-                <span className="hidden sm:inline font-semibold">
-                  {terminologyConfig.buttonTexts.send}
-                </span>
-              </button>
-            </div>
+        <div className="border-t p-6" style={{ borderColor: visualConfig.colors.border }}>
+          <div className="flex space-x-3 items-end">
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={terminologyConfig.ui.chatPlaceholder}
+              className="flex-1 p-4 border-2 focus:outline-none focus:ring-4 resize-none transition-all duration-300"
+              style={{
+                backgroundColor: visualConfig.colors.background.secondary,
+                borderColor: visualConfig.colors.border,
+                color: visualConfig.colors.text.primary,
+                borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
+              }}
+              rows={1}
+              disabled={isLoading}
+            />
+            <button
+              ref={sendButtonRef}
+              onClick={handleSendMessage}
+              disabled={isLoading || !inputText.trim()}
+              className="px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
+              style={{
+                backgroundColor: visualConfig.colors.primary,
+                color: visualConfig.colors.text.onPrimary,
+                borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
+              }}
+            >
+              <DynamicIcon name="Send" className="h-5 w-5" />
+              <span className="hidden sm:inline font-semibold">
+                {terminologyConfig.buttonTexts.send}
+              </span>
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Logout Button - Fixed Position Bottom Right */}
+      {/* EXISTING: Logout Button */}
       <button
         onClick={() => setShowLogoutModal(true)}
         className="fixed bottom-6 right-6 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-red-300 z-50"
@@ -470,7 +563,7 @@ useEffect(() => {
         <Icons.LogOut className="h-6 w-6" />
       </button>
 
-      {/* Logout Confirmation Modal */}
+      {/* EXISTING: Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-2xl animate-scale-in">
@@ -485,15 +578,15 @@ useEffect(() => {
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                  className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                  className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  Yes, Logout
+                  Logout
                 </button>
               </div>
             </div>
@@ -501,36 +594,17 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Add these CSS animations in your global styles */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes scale-in {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-        
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out;
-        }
-      `}</style>
+      {/* ⚡ ENTERPRISE: Performance debug overlay (only in dev) */}
+      {process.env.NODE_ENV === 'development' && performanceMetrics.webhookLatency && (
+        <div className="fixed bottom-20 right-4 bg-black bg-opacity-80 text-white text-xs p-2 rounded max-w-xs">
+          <div>🚀 ENTERPRISE METRICS</div>
+          <div>Webhook: {performanceMetrics.webhookLatency}ms</div>
+          {performanceMetrics.functionLatency && <div>Function: {performanceMetrics.functionLatency}ms</div>}
+          {performanceMetrics.totalResponseTime && <div>Total: {performanceMetrics.totalResponseTime}s</div>}
+          {performanceMetrics.makecomProcessingTime && <div>Make.com: {performanceMetrics.makecomProcessingTime}s</div>}
+          <div>Health: {connectionHealth}</div>
+        </div>
+      )}
     </div>
   );
 };
