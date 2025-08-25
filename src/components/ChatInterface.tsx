@@ -31,7 +31,7 @@ const DynamicIcon = ({ name, ...props }: { name: keyof typeof Icons } & Icons.Lu
 
 const ChatInterface = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const visualConfig = getSmartVisualThemeConfig(theme);
 
   // 🏢 ENTERPRISE: Minimal performance tracking (background only)
