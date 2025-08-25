@@ -532,15 +532,17 @@ const ChatInterface = () => {
       {/* Feedback Button */}
       <button
         onClick={() => setShowFeedbackPopup(true)}
-        className="fixed bottom-6 left-6 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 z-50"
+        className="fixed bottom-6 left-6 px-5 py-3 shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 z-50 flex items-center justify-center gap-2"
         style={{
           backgroundColor: visualConfig.colors.primary,
           color: visualConfig.colors.text.onPrimary,
           '--tw-ring-color': visualConfig.colors.primary,
+          borderRadius: visualConfig.patterns.componentShape === 'organic' ? '1.25rem' : '0.75rem'
         }}
-        title="Submit Feedback"
+        title="Send Feedback"
       >
-        <Icons.MessageSquareQuote className="h-6 w-6" />
+        <Icons.MessageSquareQuote className="h-5 w-5" />
+        <span className="hidden sm:inline font-semibold">Send Feedback</span>
       </button>
 
       <button
