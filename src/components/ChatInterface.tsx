@@ -32,6 +32,11 @@ const ChatInterface = () => {
   const { user, signOut } = useAuth();
   const visualConfig = getSmartVisualThemeConfig(theme);
 
+  console.log('🔍 DEBUG - theme:', theme);
+  console.log('🔍 DEBUG - visualConfig:', visualConfig);
+  console.log('🔍 DEBUG - visualConfig.colors:', visualConfig?.colors);
+  console.log('🔍 DEBUG - typeof visualConfig:', typeof visualConfig);
+
   // ⚡ ENTERPRISE: Performance metrics (NEW)
   const [performanceMetrics, setPerformanceMetrics] = useState({
     webhookLatency: null,
