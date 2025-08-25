@@ -98,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     betaCodeId: number
   ): Promise<{ success: boolean; error?: string; userData?: any }> => {
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
+      // Step 1: Create beta_users record
+      const userResponse = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
@@ -113,15 +114,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           beta_code_used: betaCode,
           beta_code_id: betaCodeId,
           is_active: true,
-          is_admin: false // 🎯 NEW: Default not admin
+          is_admin: false
         })
       });
 
-      if (!response.ok) {
+      if (!userResponse.ok) {
         return { success: false, error: 'Registration failed' };
       }
 
-      const newUser = await response.json();
+      const newUser = await userResponse.json();
+
+      // Step 2: Mark beta code as used - THIS WAS MISSING
+      const codeUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?id=eq.${betaCodeId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          used: true,
+          used_by_user_id: newUser[0].id,
+          used_at: new Date().toISOString()
+        })
+      });
+
+      if (!codeUpdateResponse.ok) {
+        console.error('Failed to mark beta code as used');
+        // Don't fail registration, but log the issue
+      }
+
       return { success: true, userData: newUser[0] };
     } catch (error) {
       console.error('Registration error:', error);
