@@ -34,7 +34,7 @@ const ChatInterface = () => {
   const { user, signOut, isAdmin } = useAuth();
   const visualConfig = getSmartVisualThemeConfig(theme);
 
-  // 🏢 ENTERPRISE: Minimal performance tracking (background only)
+  // 🏢 ENTERPRISE: Minimal performance tracking (background + admin only)
   const [performanceMetrics, setPerformanceMetrics] = useState({
     webhookLatency: null,
     totalResponseTime: null
@@ -384,6 +384,22 @@ const ChatInterface = () => {
                 <span className="hidden sm:inline font-medium">New Chat</span>
               </button>
 
+              {/* 🎯 NEW: Admin Performance Toggle */}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowPerformancePanel(!showPerformancePanel)}
+                  className="p-3 rounded-xl transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  style={{
+                    backgroundColor: showPerformancePanel ? visualConfig.colors.primary : (theme === 'light' ? '#f3f4f6' : '#374151'),
+                    color: showPerformancePanel ? visualConfig.colors.text.onPrimary : visualConfig.colors.text.secondary
+                  }}
+                  aria-label="Toggle performance panel"
+                  title="Toggle performance monitoring"
+                >
+                  <Icons.Activity className="h-6 w-6" />
+                </button>
+              )}
+
               {/* ORIGINAL: Theme Toggle */}
               <button
                 onClick={toggleTheme}
@@ -540,7 +556,7 @@ const ChatInterface = () => {
       )}
 
       {/* 🏢 ENTERPRISE: Performance metrics (dev only, non-intrusive) */}
-      {process.env.NODE_ENV === 'development' && performanceMetrics.webhookLatency && (
+      {isAdmin && showPerformancePanel && performanceMetrics.webhookLatency && (
         <div className="fixed bottom-20 right-4 bg-black bg-opacity-80 text-white text-xs p-2 rounded max-w-xs">
           <div>🏢 PERFORMANCE</div>
           <div>Webhook: {performanceMetrics.webhookLatency}ms</div>
