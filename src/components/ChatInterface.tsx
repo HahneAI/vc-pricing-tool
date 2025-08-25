@@ -342,7 +342,7 @@ const ChatInterface = () => {
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setIsMenuOpen(true)}
-                className="md:hidden p-2 rounded-md transition-colors"
+                className="p-2 rounded-md transition-colors"
                 style={{ color: visualConfig.colors.text.secondary }}
                 aria-label="Open menu"
               >
@@ -530,7 +530,7 @@ const ChatInterface = () => {
       </main>
 
       {/* Feedback Button - Desktop only */}
-      <div className="hidden md:block fixed bottom-4 left-4 z-10">
+      <div className="hidden">
         <button
           onClick={() => setShowFeedbackPopup(true)}
           className="flex items-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
@@ -547,7 +547,7 @@ const ChatInterface = () => {
       </div>
 
       {/* Logout Button - Desktop only */}
-      <div className="hidden md:block fixed bottom-4 right-4 z-10">
+      <div className="hidden">
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
