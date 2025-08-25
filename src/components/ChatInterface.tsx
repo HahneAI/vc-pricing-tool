@@ -523,7 +523,7 @@ const ChatInterface = () => {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={terminologyConfig.ui.chatPlaceholder}
+              placeholder={terminologyConfig.placeholderExamples}
               className="flex-1 p-4 border-2 focus:outline-none focus:ring-4 resize-none transition-all duration-300"
               style={{
                 backgroundColor: visualConfig.colors.background.secondary,
