@@ -556,7 +556,7 @@ const ChatInterface = () => {
       )}
 
       {/* 🏢 ENTERPRISE: Performance metrics (dev only, non-intrusive) */}
-      {isAdmin && showPerformancePanel && performanceMetrics.webhookLatency && (
+      {isAdmin && showPerformancePanel && (
         <div className="fixed bottom-20 right-4 bg-black bg-opacity-80 text-white text-xs p-2 rounded max-w-xs">
           <div>🏢 PERFORMANCE</div>
           <div>Webhook: {performanceMetrics.webhookLatency}ms</div>
