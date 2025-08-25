@@ -40,6 +40,7 @@ const ChatInterface = () => {
     totalResponseTime: null
   });
   const [processingStartTime, setProcessingStartTime] = useState(null);
+  const [showPerformancePanel, setShowPerformancePanel] = useState(false);
 
   const generateSessionId = () => {
     if (!user) {
