@@ -370,6 +370,27 @@ const ChatInterface = () => {
 
             {/* Right side: Controls */}
             <div className="flex items-center space-x-2">
+              {/* User info in header - Desktop only */}
+              <div className="hidden md:flex items-center space-x-3 mr-4 px-3 py-2 rounded-lg" style={{ backgroundColor: visualConfig.colors.surface }}>
+                <div
+                  className="flex items-center justify-center w-8 h-8 rounded-full"
+                  style={{
+                    backgroundColor: visualConfig.colors.primary,
+                    color: visualConfig.colors.text.onPrimary,
+                  }}
+                >
+                  <DynamicIcon name="User" className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: visualConfig.colors.text.primary }}>
+                    {user?.first_name || 'User'}
+                  </p>
+                  <p className="text-xs" style={{ color: visualConfig.colors.text.secondary }}>
+                    {user?.job_title || 'Technician'}
+                  </p>
+                </div>
+              </div>
+
               <button
                 ref={refreshButtonRef}
                 onClick={handleRefreshChat}
@@ -508,28 +529,39 @@ const ChatInterface = () => {
         </div>
       </main>
 
-      {/* Footer for User Avatar */}
-      <footer className="hidden md:block fixed bottom-4 left-4 z-10">
-        <div className="flex items-center space-x-3">
-            <div
-              className="flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-200 hover:shadow-lg"
-              style={{
-                backgroundColor: visualConfig.colors.primary,
-                color: visualConfig.colors.text.onPrimary,
-              }}
-            >
-              <DynamicIcon name="User" className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm" style={{ color: visualConfig.colors.text.primary }}>
-                {user?.first_name || 'User'}
-              </p>
-              <p className="text-xs" style={{ color: visualConfig.colors.text.secondary }}>
-                {user?.job_title || 'Technician'}
-              </p>
-            </div>
-          </div>
-      </footer>
+      {/* Feedback Button - Desktop only */}
+      <div className="hidden md:block fixed bottom-4 left-4 z-10">
+        <button
+          onClick={() => setShowFeedbackPopup(true)}
+          className="flex items-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+          style={{
+            backgroundColor: visualConfig.colors.primary,
+            color: visualConfig.colors.text.onPrimary,
+            '--tw-ring-color': visualConfig.colors.primary,
+          }}
+          title="Send feedback"
+        >
+          <DynamicIcon name="MessageSquareQuote" className="h-5 w-5" />
+          <span className="font-medium">Send Feedback</span>
+        </button>
+      </div>
+
+      {/* Logout Button - Desktop only */}
+      <div className="hidden md:block fixed bottom-4 right-4 z-10">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+          style={{
+            backgroundColor: '#ef4444',
+            color: '#ffffff',
+            '--tw-ring-color': '#ef4444',
+          }}
+          title="Logout"
+        >
+          <DynamicIcon name="LogOut" className="h-5 w-5" />
+          <span className="font-medium">Logout</span>
+        </button>
+      </div>
 
       {/* Feedback Popup */}
       <FeedbackPopup
