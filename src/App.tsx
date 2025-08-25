@@ -11,12 +11,16 @@ import { useAppLoading } from './utils/loading-manager';
 console.log('🟢 APP.TSX - Component mounting...');
 
 type AppState = 'loading' | 'login' | 'onboarding' | 'confirmation' | 'authenticated';
+type AnimationState = 'in' | 'out';
 
 function App() {
   const { user, loading: authLoading, registerBetaUser, signInBetaUser, completeRegistration } = useAuth();
-  const [appState, setAppState] = useState<AppState>('loading');
-  const [isExitingLoading, setIsExitingLoading] = useState(false);
 
+  const [appState, setAppState] = useState<AppState>('loading');
+  const [animationState, setAnimationState] = useState<AnimationState>('in');
+  const [currentAppState, setCurrentAppState] = useState<AppState>(appState);
+
+  const [isExitingLoading, setIsExitingLoading] = useState(false);
   const [validBetaCode, setValidBetaCode] = useState<string>('');
   const [betaCodeId, setBetaCodeId] = useState<number>(0);
   const [registrationError, setRegistrationError] = useState('');
@@ -25,6 +29,15 @@ function App() {
   const isMinDurationPassed = useAppLoading();
   const isLoading = authLoading || isMinDurationPassed;
 
+  const setAppStateWithAnimation = (newStage: AppState) => {
+    setAnimationState('out');
+    setTimeout(() => {
+      setAppState(newStage);
+      setCurrentAppState(newStage);
+      setAnimationState('in');
+    }, 400); // Corresponds to the fade-out animation duration
+  };
+
   useEffect(() => {
     document.title = 'TradeSphere - AI Pricing Assistant';
 
@@ -32,9 +45,9 @@ function App() {
       setIsExitingLoading(true);
       const timer = setTimeout(() => {
         if (user) {
-          setAppState('authenticated');
+          setAppStateWithAnimation('authenticated');
         } else {
-          setAppState('login');
+          setAppStateWithAnimation('login');
         }
       }, 500); // Corresponds to the fade-out animation duration
 
@@ -45,13 +58,13 @@ function App() {
   const handleValidBetaCode = (code: string, codeId: number) => {
     setValidBetaCode(code);
     setBetaCodeId(codeId);
-    setAppState('onboarding');
+    setAppStateWithAnimation('onboarding');
   };
 
   const handleExistingUserLogin = async (firstName: string, betaCodeId: string) => {
     const result = await signInBetaUser(firstName, betaCodeId);
     if (result.success) {
-      setAppState('authenticated');
+      setAppStateWithAnimation('authenticated');
     } else {
       console.error('Login failed:', result.error);
       throw new Error('login failed... did you get your beta code?');
@@ -74,7 +87,7 @@ function App() {
         jobTitle: userData.jobTitle,
         fullUserData: result.userData
       });
-      setAppState('confirmation');
+      setAppStateWithAnimation('confirmation');
     } else {
       setRegistrationError(result.error || 'Registration failed');
       console.error('Registration failed:', result.error);
@@ -84,8 +97,17 @@ function App() {
   const handleConfirmationComplete = () => {
     if (newUserData && newUserData.fullUserData) {
       completeRegistration(newUserData.fullUserData);
-      setAppState('authenticated');
+      setAppStateWithAnimation('authenticated');
     }
+  };
+
+  const animatedRender = (Component: React.ReactNode) => {
+    const animationClass = animationState === 'in' ? 'animate-screen-in' : 'animate-screen-out';
+    return (
+      <div key={currentAppState} className={animationClass}>
+        {Component}
+      </div>
+    );
   };
 
   // Render loading screen until ready and not exiting
@@ -96,10 +118,10 @@ function App() {
   const renderContent = () => {
     switch (appState) {
       case 'login':
-        return <BetaLogin onValidCode={handleValidBetaCode} onExistingUser={handleExistingUserLogin} />;
+        return animatedRender(<BetaLogin onValidCode={handleValidBetaCode} onExistingUser={handleExistingUserLogin} />);
 
       case 'onboarding':
-        return (
+        return animatedRender(
           <div>
             <OnboardingForm betaCode={validBetaCode} betaCodeId={betaCodeId} onComplete={handleOnboardingComplete} />
             {registrationError && (
@@ -115,7 +137,7 @@ function App() {
 
       case 'confirmation':
         if (newUserData) {
-          return (
+          return animatedRender(
             <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
               <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
                 <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-6">
@@ -159,7 +181,7 @@ function App() {
 
       case 'authenticated':
         if (user) {
-          return (
+          return animatedRender(
             <div>
               <div className="hidden">
                 <p>Logged in as: {user.full_name} ({user.job_title})</p>
@@ -182,9 +204,7 @@ function App() {
     <ThemeProvider>
       <ThemeApplicator />
       <div className="min-h-screen transition-colors duration-500 bg-background text-text-primary">
-        <div className="animate-fade-in-main">
-          {renderContent()}
-        </div>
+        {renderContent()}
       </div>
     </ThemeProvider>
   );
