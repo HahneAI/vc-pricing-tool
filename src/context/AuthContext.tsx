@@ -2,20 +2,22 @@ import { createContext, useContext, useState, useEffect, ReactNode, useRef } fro
 
 interface BetaUser {
   id: string;
-  email?: string; // Now optional
+  email?: string;
   first_name: string;
-  full_name?: string; // Now optional
+  full_name?: string;
   job_title: string;
   tech_uuid: string;
   beta_code_used: string;
   beta_code_id: number;
   is_active: boolean;
+  is_admin: boolean; // 🎯 NEW: Admin field
   created_at: string;
 }
 
 interface AuthContextType {
   user: BetaUser | null;
   loading: boolean;
+  isAdmin: boolean; // 🎯 NEW: Admin status
   validateBetaCode: (code: string) => Promise<{ valid: boolean; error?: string }>;
   registerBetaUser: (userData: {
     firstName: string;
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   console.log('🟢 AUTH_CONTEXT - Provider mounting...');
   const [user, setUser] = useState<BetaUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false); // 🎯 NEW: Admin state
   const initialized = useRef(false);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const userData = JSON.parse(storedUser);
           setUser(userData);
+          setIsAdmin(userData.is_admin || false); // 🎯 NEW: Set admin status
         } catch (error) {
           console.error('Failed to parse stored user data:', error);
           localStorage.removeItem('tradesphere_beta_user');
@@ -72,100 +76,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        return { valid: false, error: 'Failed to validate beta code' };
+        return { valid: false, error: 'Failed to validate code' };
       }
 
       const codes = await response.json();
+      const betaCode = codes.find((c: any) => c.code === code && c.is_active);
       
-      if (codes.length === 0) {
-        return { valid: false, error: 'Invalid beta code' };
-      }
-
-      const betaCode = codes[0];
-      
-      if (betaCode.used) {
-        return { valid: false, error: 'Beta code already used' };
-      }
-
-      if (new Date(betaCode.expires_at) < new Date()) {
-        return { valid: false, error: 'Beta code expired' };
-      }
-
-      return { valid: true };
+      return { 
+        valid: !!betaCode, 
+        error: betaCode ? undefined : 'Invalid or inactive beta code' 
+      };
     } catch (error) {
       console.error('Beta code validation error:', error);
-      return { valid: false, error: 'Network error validating beta code' };
+      return { valid: false, error: 'Validation failed' };
     }
   };
 
   const registerBetaUser = async (
-    userData: {
-      firstName: string;
-      jobTitle: string;
-      email: string;
-    },
-    betaCode: string,
+    userData: { firstName: string; jobTitle: string; email: string }, 
+    betaCode: string, 
     betaCodeId: number
   ): Promise<{ success: boolean; error?: string; userData?: any }> => {
     try {
-      // First, validate the beta code again
-      const codeValidation = await validateBetaCode(betaCode);
-      if (!codeValidation.valid) {
-        return { success: false, error: codeValidation.error };
-      }
-
-      // Create the user
-      const createUserResponse = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-          email: userData.email || null, // Handle optional email
-          first_name: userData.firstName,
-          job_title: userData.jobTitle,
-          beta_code_used: betaCode,
-          beta_code_id: betaCodeId
-        })
-      });
-
-      if (!createUserResponse.ok) {
-        const errorData = await createUserResponse.json();
-        return { success: false, error: errorData.message || 'Failed to create user account' };
-      }
-
-      const newUser = (await createUserResponse.json())[0] as BetaUser;
-
-      // Mark the beta code as used
-      const updateCodeResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?code=eq.${betaCode}`, {
-        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           'apikey': supabaseKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          used: true,
-          used_by_email: userData.email || null,
-          used_by_user_id: newUser.id,
-          used_at: new Date().toISOString()
+          first_name: userData.firstName,
+          job_title: userData.jobTitle,
+          email: userData.email,
+          tech_uuid: `tech_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+          beta_code_used: betaCode,
+          beta_code_id: betaCodeId,
+          is_active: true,
+          is_admin: false // 🎯 NEW: Default not admin
         })
       });
 
-      if (!updateCodeResponse.ok) {
-        console.error('Failed to mark beta code as used');
-        // Don't fail the registration for this, but log it
+      if (!response.ok) {
+        return { success: false, error: 'Registration failed' };
       }
 
-      // Don't set user in state/localStorage yet - wait for confirmation
-      // Just return the user data for the confirmation page
-      return { success: true, userData: newUser };
+      const newUser = await response.json();
+      return { success: true, userData: newUser[0] };
     } catch (error) {
-      console.error('User registration error:', error);
-      return { success: false, error: 'Failed to create account' };
+      console.error('Registration error:', error);
+      return { success: false, error: 'Registration failed' };
     }
   };
 
@@ -199,9 +159,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const betaUser = userAccount as BetaUser;
 
-      // Set user in state and localStorage
+      // 🎯 NEW: Set admin status
       setUser(betaUser);
+      setIsAdmin(betaUser.is_admin || false);
       localStorage.setItem('tradesphere_beta_user', JSON.stringify(betaUser));
+
+      // 🎯 NEW: Log admin login
+      if (betaUser.is_admin) {
+        console.log('👑 ADMIN LOGIN DETECTED:', betaUser.first_name);
+      }
 
       return { success: true };
     } catch (error) {
@@ -212,17 +178,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => {
     setUser(null);
+    setIsAdmin(false); // 🎯 NEW: Reset admin status
     localStorage.removeItem('tradesphere_beta_user');
   };
 
   const completeRegistration = (userData: BetaUser) => {
     setUser(userData);
+    setIsAdmin(userData.is_admin || false); // 🎯 NEW: Set admin status
     localStorage.setItem('tradesphere_beta_user', JSON.stringify(userData));
   };
 
   const value = {
     user,
     loading,
+    isAdmin, // 🎯 NEW: Expose admin status
     validateBetaCode,
     registerBetaUser,
     signInBetaUser,
@@ -231,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return <AuthContext.Provider value={value}>
-    {console.log('🎨 AUTH_CONTEXT - Providing:', { loading, user: !!user })}
+    {console.log('🎨 AUTH_CONTEXT - Providing:', { loading, user: !!user, isAdmin })}
     {children}</AuthContext.Provider>;
 }
 
