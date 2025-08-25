@@ -463,7 +463,7 @@ const ChatInterface = () => {
     <div className="flex flex-col h-full" style={{ backgroundColor: visualConfig.colors.background.primary }}>
       <header className="border-b p-4 flex items-center justify-between" style={{ borderColor: visualConfig.colors.border }}>
         <div className="flex items-center space-x-4">
-          <ThemeAwareAvatar user={user} size="sm" theme={theme} />
+          <ThemeAwareAvatar user={user} size="sm" theme={theme} visualConfig={visualConfig} />
           <div>
             <h2 className="text-xl font-bold" style={{ color: visualConfig.colors.text.primary }}>
               {coreConfig.companyName} Chat
@@ -511,12 +511,13 @@ const ChatInterface = () => {
               message={message}
               user={user}
               theme={theme}
+              visualConfig={visualConfig}
             />
           ))}
           
           {/* ⚡ ENTERPRISE: Show enhanced loading or existing typing */}
           {isLoading && (
-            loadingStage ? renderEnterpriseLoading() : <TypingIndicator theme={theme} />
+            loadingStage ? renderEnterpriseLoading() : <TypingIndicator theme={theme} visualConfig={visualConfig} />
           )}
 
           <div ref={messagesEndRef} />
