@@ -461,7 +461,7 @@ const ChatInterface = () => {
           <ThemeAwareAvatar user={user} size="sm" theme={theme} />
           <div>
             <h2 className="text-xl font-bold" style={{ color: visualConfig.colors.text.primary }}>
-              {terminologyConfig.ui.chatTitle}
+              {coreConfig.companyName} Chat
             </h2>
             <div className="flex items-center space-x-2 text-xs" style={{ color: visualConfig.colors.text.secondary }}>
               <div className={`w-2 h-2 rounded-full ${
