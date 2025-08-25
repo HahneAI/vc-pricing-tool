@@ -6,8 +6,8 @@ import { User } from '../../context/AuthContext';
 interface MobileHamburgerMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogoutClick: () -> void;
-  onFeedbackClick: () -> void;
+  onLogoutClick: () => void;
+  onFeedbackClick: () => void;
   visualConfig: SmartVisualTheme;
   theme: 'light' | 'dark';
   user: User | null;
