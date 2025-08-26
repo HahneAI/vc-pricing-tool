@@ -98,12 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     betaCodeId: number
   ): Promise<{ success: boolean; error?: string; userData?: any }> => {
     try {
+      // Place the UUID generator function here
+      const generateTechUUID = () => {
+        const hex = () => Math.floor(Math.random() * 16).toString(16).toUpperCase();
+        const segment = (length) => Array.from({length}, hex).join('');
+      
+        return `TECH-${segment(8)}-${segment(4)}-${segment(4)}`;
+      };
       // Prepare data with proper null handling for email
       const registrationData = {
         first_name: userData.firstName,
         job_title: userData.jobTitle,
         email: userData.email && userData.email.trim() ? userData.email.trim() : null,
-        tech_uuid: `tech_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+        tech_uuid: generateTechUUID(),
         beta_code_used: betaCode,
         beta_code_id: betaCodeId,
         is_active: true,
