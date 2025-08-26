@@ -99,56 +99,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<{ success: boolean; error?: string; userData?: any }> => {
     try {
       // Step 1: Create beta_users record
-      const userResponse = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          first_name: userData.firstName,
-          job_title: userData.jobTitle,
-          email: userData.email,
-          tech_uuid: `tech_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
-          beta_code_used: betaCode,
-          beta_code_id: betaCodeId,
-          is_active: true,
-          is_admin: false
-        })
-      });
+      
+      const registerBetaUser = async (
+        userData: { firstName: string; jobTitle: string; email: string }, 
+        betaCode: string, 
+        betaCodeId: number
+      ): Promise<{ success: boolean; error?: string; userData?: any }> => {
+        try {
+          // Prepare data with proper null handling for email
+          const registrationData = {
+            first_name: userData.firstName,
+            job_title: userData.jobTitle,
+            email: userData.email && userData.email.trim() ? userData.email.trim() : null, // Convert empty string to null
+            tech_uuid: `tech_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+            beta_code_used: betaCode,
+            beta_code_id: betaCodeId,
+            is_active: true,
+            is_admin: false
+          };
 
-      if (!userResponse.ok) {
-        return { success: false, error: 'Registration failed' };
-      }
+          // Debug logging
+          console.log('🔍 Sending registration data:', registrationData);
 
-      const newUser = await userResponse.json();
+          // Step 1: Create beta_users record
+          const userResponse = await fetch(`${supabaseUrl}/rest/v1/beta_users`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'apikey': supabaseKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(registrationData)
+          });
 
-      // Step 2: Mark beta code as used with user's first name
-      const codeUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?id=eq.${betaCodeId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          used: true,
-          used_by_user_id: userData.firstName, // Now stores first name as text
-          used_at: new Date().toISOString()
-        })
-      });
+          if (!userResponse.ok) {
+            const errorText = await userResponse.text();
+            console.error('🚨 User creation failed:', errorText);
+            return { success: false, error: 'Registration failed' };
+          }
 
-      if (!codeUpdateResponse.ok) {
-        console.error('Failed to mark beta code as used');
-      }
+          const newUser = await userResponse.json();
+          console.log('✅ User created successfully:', newUser[0]);
 
-      return { success: true, userData: newUser[0] };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: 'Registration failed' };
-    }
-  };
+          // Step 2: Mark beta code as used
+          const codeUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?id=eq.${betaCodeId}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'apikey': supabaseKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              used: true,
+              used_by_user_id: userData.firstName, // Store first name as text
+              used_at: new Date().toISOString()
+            })
+          });
+
+          if (!codeUpdateResponse.ok) {
+            console.error('⚠️ Failed to mark beta code as used, but user created successfully');
+          } else {
+            console.log('✅ Beta code marked as used');
+          }
+
+          return { success: true, userData: newUser[0] };
+        } catch (error) {
+          console.error('💥 Registration error:', error);
+          return { success: false, error: 'Registration failed' };
+        }
+      };
 
   const signInBetaUser = async (firstName: string, betaCodeId: string): Promise<{ success: boolean; error?: string }> => {
     try {
