@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const newUser = await userResponse.json();
 
-      // Step 2: Mark beta code as used - THIS WAS MISSING
+      // Step 2: Mark beta code as used with user's first name
       const codeUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?id=eq.${betaCodeId}`, {
         method: 'PATCH',
         headers: {
@@ -134,14 +134,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           used: true,
-          used_by_user_id: newUser[0].id,
+          used_by_user_id: userData.firstName, // Now stores first name as text
           used_at: new Date().toISOString()
         })
       });
 
       if (!codeUpdateResponse.ok) {
         console.error('Failed to mark beta code as used');
-        // Don't fail registration, but log the issue
       }
 
       return { success: true, userData: newUser[0] };
