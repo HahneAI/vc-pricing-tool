@@ -140,6 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('✅ User created successfully:', newUser[0]);
 
       // Step 2: Mark beta code as used
+      console.log('🔄 Attempting to mark beta code as used:', betaCodeId);
+
       const codeUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/beta_codes?id=eq.${betaCodeId}`, {
         method: 'PATCH',
         headers: {
@@ -154,8 +156,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
       });
 
+      console.log('🔍 Beta code update response status:', codeUpdateResponse.status);
+      console.log('🔍 Beta code update response headers:', codeUpdateResponse.headers);
+
       if (!codeUpdateResponse.ok) {
-        console.error('⚠️ Failed to mark beta code as used');
+        const errorText = await codeUpdateResponse.text();
+        console.error('🚨 Beta code update failed:', errorText);
+        // Don't fail the registration - user already created successfully
+      } else {
+        const updateResult = await codeUpdateResponse.text(); // Use text() instead of json()
+        console.log('✅ Beta code update result:', updateResult);
       }
 
       return { success: true, userData: newUser[0] };
